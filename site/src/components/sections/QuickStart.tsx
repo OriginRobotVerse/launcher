@@ -1,5 +1,5 @@
 import { motion } from "framer-motion";
-import { BotIdle, BotSensing, BotConnected } from "../icons";
+import { BotIdle, BotSensing, BotConnected, OriginMark } from "../icons";
 
 const sectionStyle: React.CSSProperties = {
   padding: "120px 24px",
@@ -101,7 +101,11 @@ interface CodeToken {
 const firmwareCode: CodeToken[][] = [
   [
     { text: "#include ", color: "var(--phosphor)" },
-    { text: "<Origin.h>", color: "var(--phosphor-bright)" },
+    { text: '"origin.h"', color: "var(--phosphor-bright)" },
+  ],
+  [
+    { text: "#include ", color: "var(--phosphor)" },
+    { text: '"transports/serial_transport.h"', color: "var(--phosphor-bright)" },
   ],
   [{ text: "", color: "var(--signal)" }],
   [
@@ -115,9 +119,17 @@ const firmwareCode: CodeToken[][] = [
   ],
   [
     { text: "  origin.", color: "var(--signal)" },
-    { text: "begin", color: "var(--phosphor)" },
-    { text: "(Serial);", color: "var(--signal)" },
+    { text: "setTransport", color: "var(--phosphor)" },
+    { text: "(", color: "var(--signal)" },
   ],
+  [
+    { text: "    ", color: "var(--signal)" },
+    { text: "new ", color: "var(--phosphor)" },
+    { text: "SerialTransport(", color: "var(--signal)" },
+    { text: "9600", color: "var(--phosphor-bright)" },
+    { text: ")", color: "var(--signal)" },
+  ],
+  [{ text: "  );", color: "var(--signal)" }],
   [
     { text: "  origin.", color: "var(--signal)" },
     { text: "registerSensor", color: "var(--phosphor)" },
@@ -125,10 +137,9 @@ const firmwareCode: CodeToken[][] = [
   ],
   [
     { text: '    "distance"', color: "var(--phosphor-bright)" },
-    { text: ", pins, 2,", color: "var(--signal)" },
-  ],
-  [
-    { text: "    readDistance", color: "var(--signal)" },
+    { text: ", pins, ", color: "var(--signal)" },
+    { text: "2", color: "var(--phosphor-bright)" },
+    { text: ", readDistance", color: "var(--signal)" },
   ],
   [{ text: "  );", color: "var(--signal)" }],
   [
@@ -236,7 +247,76 @@ function TerminalIcon() {
   );
 }
 
+const installDescStyle: React.CSSProperties = {
+  fontSize: "13px",
+  lineHeight: 1.7,
+  color: "var(--dim)",
+};
+
+const installOptionStyle: React.CSSProperties = {
+  marginTop: "12px",
+  fontSize: "12px",
+  color: "var(--dim)",
+  fontFamily: "'JetBrains Mono', monospace",
+};
+
+const installOptionTitleStyle: React.CSSProperties = {
+  color: "var(--signal)",
+  fontWeight: 600,
+  fontSize: "13px",
+  marginBottom: "4px",
+};
+
 const steps = [
+  {
+    number: "0",
+    title: "Install the Origin library",
+    icon: <OriginMark width={36} height={36} />,
+    content: (
+      <div>
+        <p style={installDescStyle}>
+          Copy the firmware SDK into your Arduino libraries folder and install the ArduinoJson dependency.
+        </p>
+
+        <div style={{ ...installOptionStyle, marginTop: "16px" }}>
+          <div style={installOptionTitleStyle}>Option A: Symlink (recommended for development)</div>
+          <div style={terminalStyle}>
+            <span style={terminalPromptStyle}>$ </span>
+            <span style={terminalCommandStyle}>
+              ln -s /path/to/origin/firmware ~/Arduino/libraries/Origin
+            </span>
+          </div>
+        </div>
+
+        <div style={{ ...installOptionStyle, marginTop: "16px" }}>
+          <div style={installOptionTitleStyle}>Option B: Copy</div>
+          <div style={terminalStyle}>
+            <span style={terminalPromptStyle}>$ </span>
+            <span style={terminalCommandStyle}>
+              cp -r firmware/ ~/Arduino/libraries/Origin
+            </span>
+          </div>
+        </div>
+
+        <div style={{ ...installOptionStyle, marginTop: "16px" }}>
+          <div style={installOptionTitleStyle}>Then install ArduinoJson</div>
+          <p style={{ color: "var(--dim)", marginTop: "4px" }}>
+            Arduino IDE → Sketch → Include Library → Manage Libraries → search{" "}
+            <span style={{ color: "var(--phosphor)" }}>"ArduinoJson"</span> → Install
+          </p>
+        </div>
+
+        <div style={{ ...installOptionStyle, marginTop: "16px" }}>
+          <div style={installOptionTitleStyle}>Verify</div>
+          <p style={{ color: "var(--dim)", marginTop: "4px" }}>
+            Create a new sketch, add{" "}
+            <span style={{ color: "var(--phosphor)" }}>#include "origin.h"</span>{" "}
+            at the top, and compile. If it builds, you're good.
+          </p>
+        </div>
+      </div>
+    ),
+  },
   {
     number: "1",
     title: "Flash the firmware",
@@ -250,7 +330,7 @@ const steps = [
     content: (
       <div style={terminalStyle}>
         <span style={terminalPromptStyle}>$ </span>
-        <span style={terminalCommandStyle}>cd host && npm install</span>
+        <span style={terminalCommandStyle}>cd host && npm install && npm run build --workspaces</span>
       </div>
     ),
   },
@@ -295,7 +375,7 @@ export default function QuickStart() {
         viewport={{ once: true, margin: "-80px" }}
         transition={{ duration: 0.5, delay: 0.1 }}
       >
-        Up and Running in 4 Steps
+        Up and Running in 5 Steps
       </motion.h2>
 
       <div style={stepsContainerStyle}>

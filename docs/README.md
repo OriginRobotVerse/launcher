@@ -39,9 +39,31 @@ You write your programs in TypeScript. The Arduino becomes a dumb executor.
 
 ## Quick Start
 
+### 0. Install the Origin library
+
+Copy or symlink the firmware SDK into your Arduino libraries folder, then install the ArduinoJson dependency.
+
+**Option A: Symlink (recommended for development)**
+
+```bash
+ln -s /path/to/origin/firmware ~/Arduino/libraries/Origin
+```
+
+**Option B: Copy**
+
+```bash
+cp -r firmware/ ~/Arduino/libraries/Origin
+```
+
+**Then install ArduinoJson:**
+
+Open the Arduino IDE → Sketch → Include Library → Manage Libraries → search "ArduinoJson" → Install.
+
+**Verify it works:** Create a new sketch, add `#include "origin.h"` at the top, and compile. If it builds, you're good.
+
 ### 1. Flash the firmware onto your Arduino
 
-Copy the `firmware/` folder into your Arduino libraries directory and upload a sketch:
+Write a sketch that registers your hardware and upload it:
 
 ```cpp
 #include "origin.h"
