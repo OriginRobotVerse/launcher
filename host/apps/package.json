@@ -1,0 +1,15 @@
+{
+  "name": "@aorigin/apps",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "@aorigin/core": "*",
+    "@aorigin/launcher": "*",
+    "@aorigin/transport-serial": "*",
+    "@aorigin/transport-bluetooth": "*"
+  },
+  "devDependencies": {
+    "tsx": "^4.7.0",
+    "typescript": "^5.4.0"
+  }
+}

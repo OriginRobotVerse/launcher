@@ -1,0 +1,11 @@
+{
+  "name": "aorigin-host",
+  "private": true,
+  "workspaces": [
+    "packages/*",
+    "apps"
+  ],
+  "devDependencies": {
+    "@types/node": "^25.4.0"
+  }
+}
