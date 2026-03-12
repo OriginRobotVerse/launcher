@@ -1,0 +1,1221 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Origin — The zero point between hardware and code</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --void: #0A0A0A;
+    --panel: #111111;
+    --panel-raised: #161616;
+    --wire: #1E1E1E;
+    --wire-bright: #2A2A2A;
+    --signal: #E8E8E8;
+    --dim: #737373;
+    --dim-dark: #4A4A4A;
+    --phosphor: #F59E0B;
+    --phosphor-bright: #FBBF24;
+    --phosphor-dim: #92400E;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    background: var(--void);
+    color: var(--signal);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 14px;
+    line-height: 1.7;
+    -webkit-font-smoothing: antialiased;
+    overflow-x: hidden;
+  }
+
+  /* ---- NAV ---- */
+  nav {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 100;
+    background: rgba(10, 10, 10, 0.85);
+    backdrop-filter: blur(16px);
+    border-bottom: 1px solid var(--wire);
+    padding: 0 48px;
+    height: 56px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    animation: navSlide 0.8s cubic-bezier(0.16, 1, 0.3, 1) both;
+  }
+
+  @keyframes navSlide {
+    from { transform: translateY(-100%); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
+  }
+
+  .nav-brand {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+  }
+
+  .nav-brand svg { width: 22px; height: 22px; }
+
+  .nav-name {
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--signal);
+    letter-spacing: 0.02em;
+  }
+
+  .nav-links { display: flex; gap: 32px; }
+
+  .nav-links a {
+    color: var(--dim);
+    text-decoration: none;
+    font-size: 12px;
+    letter-spacing: 0.04em;
+    transition: color 0.2s;
+  }
+
+  .nav-links a:hover { color: var(--phosphor); }
+
+  /* ---- HERO ---- */
+  .hero {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 120px 48px 80px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  /* Coordinate grid bg */
+  .hero-grid {
+    position: absolute;
+    inset: 0;
+    opacity: 0;
+    background-image:
+      linear-gradient(var(--phosphor) 1px, transparent 1px),
+      linear-gradient(90deg, var(--phosphor) 1px, transparent 1px);
+    background-size: 80px 80px;
+    background-position: center center;
+    animation: gridFade 2s 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  }
+
+  @keyframes gridFade {
+    to { opacity: 0.03; }
+  }
+
+  /* Center axes */
+  .hero-axis-v, .hero-axis-h {
+    position: absolute;
+    background: var(--phosphor);
+    opacity: 0;
+    animation: axisDraw 1.2s 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  }
+
+  .hero-axis-v {
+    width: 1px;
+    height: 0;
+    left: 50%;
+    top: 0;
+  }
+
+  .hero-axis-h {
+    height: 1px;
+    width: 0;
+    top: 50%;
+    left: 0;
+  }
+
+  @keyframes axisDraw {
+    to { opacity: 0.06; width: 100%; height: 100%; }
+  }
+
+  /* Bot container */
+  .hero-bot {
+    position: relative;
+    z-index: 2;
+    margin-bottom: 48px;
+    opacity: 0;
+    transform: translateY(30px);
+    animation: botRise 1s 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  }
+
+  @keyframes botRise {
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  /* Eye glow pulse */
+  .eye-glow {
+    animation: eyePulse 3s ease-in-out infinite;
+  }
+
+  @keyframes eyePulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.5; }
+  }
+
+  /* Bot idle hover - slight vertical float */
+  .bot-float {
+    animation: botFloat 4s ease-in-out infinite;
+  }
+
+  @keyframes botFloat {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-6px); }
+  }
+
+  .hero-content {
+    text-align: center;
+    position: relative;
+    z-index: 2;
+  }
+
+  .hero-title {
+    font-size: 56px;
+    font-weight: 700;
+    letter-spacing: -0.03em;
+    color: var(--signal);
+    margin-bottom: 20px;
+    opacity: 0;
+    transform: translateY(20px);
+    animation: textReveal 0.8s 1.1s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  }
+
+  .hero-title span { color: var(--phosphor); }
+
+  .hero-sub {
+    font-size: 16px;
+    font-weight: 300;
+    color: var(--dim);
+    max-width: 560px;
+    margin: 0 auto 40px;
+    line-height: 1.8;
+    opacity: 0;
+    transform: translateY(20px);
+    animation: textReveal 0.8s 1.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  }
+
+  @keyframes textReveal {
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .hero-actions {
+    display: flex;
+    gap: 16px;
+    justify-content: center;
+    align-items: center;
+    opacity: 0;
+    animation: textReveal 0.8s 1.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  }
+
+  .btn-primary {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    padding: 14px 28px;
+    background: var(--phosphor);
+    color: var(--void);
+    font-family: inherit;
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    text-decoration: none;
+    border: none;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .btn-primary::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent);
+    transform: translateX(-100%);
+    animation: btnShimmer 3s 2s infinite;
+  }
+
+  @keyframes btnShimmer {
+    0% { transform: translateX(-100%); }
+    30% { transform: translateX(100%); }
+    100% { transform: translateX(100%); }
+  }
+
+  .btn-secondary {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 14px 28px;
+    background: transparent;
+    color: var(--signal);
+    font-family: inherit;
+    font-size: 13px;
+    font-weight: 500;
+    letter-spacing: 0.02em;
+    text-decoration: none;
+    border: 1px solid var(--wire-bright);
+    cursor: pointer;
+    transition: border-color 0.2s, color 0.2s, transform 0.2s;
+  }
+
+  .btn-secondary:hover {
+    border-color: var(--phosphor);
+    color: var(--phosphor);
+    transform: translateY(-2px);
+  }
+
+  .hero-tag {
+    margin-top: 48px;
+    opacity: 0;
+    animation: textReveal 0.8s 1.7s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    position: relative;
+    z-index: 2;
+  }
+
+  .hero-tag span {
+    font-size: 11px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--dim-dark);
+    padding: 8px 16px;
+    border: 1px solid var(--wire);
+  }
+
+  /* ---- SCROLL REVEAL ---- */
+  .reveal {
+    opacity: 0;
+    transform: translateY(40px);
+    transition: opacity 0.8s cubic-bezier(0.16, 1, 0.3, 1),
+                transform 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  .reveal.visible {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  .reveal-delay-1 { transition-delay: 0.1s; }
+  .reveal-delay-2 { transition-delay: 0.2s; }
+  .reveal-delay-3 { transition-delay: 0.3s; }
+  .reveal-delay-4 { transition-delay: 0.4s; }
+
+  /* ---- SECTIONS ---- */
+  .container {
+    max-width: 1120px;
+    margin: 0 auto;
+    padding: 0 48px;
+  }
+
+  section {
+    padding: 120px 0;
+    border-top: 1px solid var(--wire);
+    position: relative;
+  }
+
+  .section-label {
+    font-size: 11px;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--phosphor);
+    margin-bottom: 16px;
+  }
+
+  .section-title {
+    font-size: 32px;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    color: var(--signal);
+    margin-bottom: 16px;
+  }
+
+  .section-desc {
+    font-size: 15px;
+    color: var(--dim);
+    max-width: 600px;
+    line-height: 1.8;
+    font-weight: 300;
+  }
+
+  /* ---- WHAT IS ORIGIN ---- */
+  .what-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1px;
+    background: var(--wire);
+    margin-top: 64px;
+  }
+
+  .what-card {
+    background: var(--panel);
+    padding: 48px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .what-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 3px;
+    height: 0;
+    background: var(--phosphor);
+    transition: height 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  .what-card:hover::before {
+    height: 100%;
+  }
+
+  .what-card .wc-number {
+    font-size: 11px;
+    color: var(--phosphor);
+    letter-spacing: 0.12em;
+    margin-bottom: 16px;
+  }
+
+  .what-card .wc-title {
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--signal);
+    margin-bottom: 12px;
+  }
+
+  .what-card .wc-text {
+    font-size: 13px;
+    color: var(--dim);
+    line-height: 1.8;
+  }
+
+  /* ---- DEVICES ---- */
+  .devices-strip {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1px;
+    background: var(--wire);
+    margin-top: 64px;
+  }
+
+  .device-card {
+    background: var(--panel);
+    padding: 40px 32px;
+    text-align: center;
+    transition: background 0.3s;
+    position: relative;
+  }
+
+  .device-card:hover {
+    background: var(--panel-raised);
+  }
+
+  .device-card .dc-icon {
+    margin-bottom: 20px;
+    height: 80px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .device-card .dc-name {
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--signal);
+    margin-bottom: 6px;
+  }
+
+  .device-card .dc-type {
+    font-size: 11px;
+    color: var(--dim);
+    letter-spacing: 0.06em;
+  }
+
+  .device-card .dc-status {
+    margin-top: 16px;
+    font-size: 10px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    padding: 4px 10px;
+    display: inline-block;
+  }
+
+  .dc-status.live {
+    color: var(--phosphor);
+    border: 1px solid var(--phosphor-dim);
+    background: rgba(245, 158, 11, 0.06);
+  }
+
+  .dc-status.soon {
+    color: var(--dim);
+    border: 1px solid var(--wire);
+  }
+
+  /* ---- CODE DEMO ---- */
+  .code-section {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1px;
+    background: var(--wire);
+    margin-top: 64px;
+  }
+
+  .code-panel {
+    background: var(--panel);
+    padding: 0;
+    overflow: hidden;
+  }
+
+  .code-header {
+    padding: 16px 24px;
+    border-bottom: 1px solid var(--wire);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .code-dot {
+    width: 8px;
+    height: 8px;
+  }
+
+  .code-filename {
+    font-size: 12px;
+    color: var(--dim);
+  }
+
+  .code-body {
+    padding: 24px;
+    font-size: 12px;
+    line-height: 1.9;
+    overflow-x: auto;
+  }
+
+  .code-body .kw { color: var(--phosphor); }
+  .code-body .fn { color: #93C5FD; }
+  .code-body .str { color: #86EFAC; }
+  .code-body .cm { color: var(--dim-dark); }
+  .code-body .num { color: #FCA5A5; }
+  .code-body .op { color: var(--dim); }
+
+  .code-desc {
+    background: var(--panel);
+    padding: 48px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+  }
+
+  .code-desc .cd-title {
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--signal);
+    margin-bottom: 16px;
+  }
+
+  .code-desc .cd-text {
+    font-size: 13px;
+    color: var(--dim);
+    line-height: 1.8;
+    margin-bottom: 24px;
+  }
+
+  .code-desc .cd-highlight {
+    font-size: 12px;
+    color: var(--phosphor);
+    padding: 12px 16px;
+    border-left: 2px solid var(--phosphor);
+    background: rgba(245, 158, 11, 0.04);
+  }
+
+  /* ---- APP STORE SECTION ---- */
+  .appstore {
+    text-align: center;
+    padding: 160px 48px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .appstore-grid-bg {
+    position: absolute;
+    inset: 0;
+    opacity: 0.02;
+    background-image:
+      linear-gradient(var(--phosphor) 1px, transparent 1px),
+      linear-gradient(90deg, var(--phosphor) 1px, transparent 1px);
+    background-size: 40px 40px;
+  }
+
+  .appstore-glow {
+    position: absolute;
+    width: 400px;
+    height: 400px;
+    background: radial-gradient(circle, rgba(245, 158, 11, 0.06) 0%, transparent 70%);
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    animation: glowPulse 4s ease-in-out infinite;
+  }
+
+  @keyframes glowPulse {
+    0%, 100% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+    50% { opacity: 0.5; transform: translate(-50%, -50%) scale(1.2); }
+  }
+
+  .appstore-content {
+    position: relative;
+    z-index: 2;
+  }
+
+  .appstore .as-pretitle {
+    font-size: 11px;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--phosphor);
+    margin-bottom: 24px;
+  }
+
+  .appstore h2 {
+    font-size: 40px;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    color: var(--signal);
+    margin-bottom: 20px;
+  }
+
+  .appstore h2 span { color: var(--phosphor); }
+
+  .appstore .as-desc {
+    font-size: 15px;
+    color: var(--dim);
+    max-width: 520px;
+    margin: 0 auto 48px;
+    line-height: 1.8;
+    font-weight: 300;
+  }
+
+  .appstore-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 12px;
+    padding: 18px 36px;
+    background: transparent;
+    border: 2px solid var(--phosphor);
+    color: var(--phosphor);
+    font-family: inherit;
+    font-size: 14px;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    cursor: default;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .appstore-btn .btn-dot {
+    width: 8px;
+    height: 8px;
+    background: var(--phosphor);
+    animation: dotBlink 2s ease-in-out infinite;
+  }
+
+  @keyframes dotBlink {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.3; }
+  }
+
+  .appstore-apps {
+    display: flex;
+    justify-content: center;
+    gap: 1px;
+    margin-top: 64px;
+    background: var(--wire);
+    max-width: 640px;
+    margin-left: auto;
+    margin-right: auto;
+  }
+
+  .app-preview {
+    background: var(--panel);
+    padding: 24px;
+    flex: 1;
+    text-align: center;
+    transition: background 0.2s;
+  }
+
+  .app-preview:hover { background: var(--panel-raised); }
+
+  .app-preview .ap-icon {
+    width: 32px;
+    height: 32px;
+    margin: 0 auto 12px;
+    border: 1px solid var(--wire-bright);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .app-preview .ap-icon .inner {
+    width: 12px;
+    height: 12px;
+  }
+
+  .app-preview .ap-name {
+    font-size: 11px;
+    color: var(--signal);
+    margin-bottom: 4px;
+  }
+
+  .app-preview .ap-author {
+    font-size: 10px;
+    color: var(--dim-dark);
+  }
+
+  /* ---- HOW IT WORKS ---- */
+  .flow-steps {
+    display: grid;
+    grid-template-columns: 1fr 48px 1fr 48px 1fr;
+    align-items: start;
+    margin-top: 64px;
+    gap: 0;
+  }
+
+  .flow-step {
+    background: var(--panel);
+    border: 1px solid var(--wire);
+    padding: 40px 32px;
+  }
+
+  .flow-step .fs-number {
+    font-size: 32px;
+    font-weight: 700;
+    color: var(--phosphor);
+    margin-bottom: 16px;
+    line-height: 1;
+  }
+
+  .flow-step .fs-title {
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--signal);
+    margin-bottom: 10px;
+  }
+
+  .flow-step .fs-text {
+    font-size: 12px;
+    color: var(--dim);
+    line-height: 1.7;
+  }
+
+  .flow-arrow {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding-top: 48px;
+  }
+
+  .flow-arrow svg {
+    color: var(--dim-dark);
+  }
+
+  /* ---- TERMINAL TICKER ---- */
+  .ticker-wrap {
+    border-top: 1px solid var(--wire);
+    border-bottom: 1px solid var(--wire);
+    padding: 20px 0;
+    overflow: hidden;
+    position: relative;
+  }
+
+  .ticker {
+    display: flex;
+    gap: 64px;
+    animation: tickerScroll 20s linear infinite;
+    width: max-content;
+  }
+
+  @keyframes tickerScroll {
+    from { transform: translateX(0); }
+    to { transform: translateX(-50%); }
+  }
+
+  .ticker-item {
+    font-size: 12px;
+    color: var(--dim-dark);
+    letter-spacing: 0.06em;
+    white-space: nowrap;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .ticker-item .t-dot {
+    width: 4px;
+    height: 4px;
+    background: var(--phosphor);
+    opacity: 0.5;
+  }
+
+  /* ---- FOOTER ---- */
+  footer {
+    border-top: 1px solid var(--wire);
+    padding: 48px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .footer-left {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+  }
+
+  .footer-left svg { width: 20px; height: 20px; }
+
+  .footer-left span {
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--dim);
+  }
+
+  .footer-right {
+    font-size: 11px;
+    color: var(--dim-dark);
+    letter-spacing: 0.04em;
+  }
+
+  /* ---- SCANLINE OVERLAY ---- */
+  .scanlines {
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 999;
+    opacity: 0.015;
+    background: repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 2px,
+      rgba(245, 158, 11, 0.3) 2px,
+      rgba(245, 158, 11, 0.3) 4px
+    );
+  }
+</style>
+</head>
+<body>
+
+<div class="scanlines"></div>
+
+<!-- NAV -->
+<nav>
+  <div class="nav-brand">
+    <svg viewBox="0 0 24 24" fill="none">
+      <line x1="12" y1="1" x2="12" y2="9" stroke="#F59E0B" stroke-width="1.5"/>
+      <line x1="12" y1="15" x2="12" y2="23" stroke="#F59E0B" stroke-width="1.5"/>
+      <line x1="1" y1="12" x2="9" y2="12" stroke="#F59E0B" stroke-width="1.5"/>
+      <line x1="15" y1="12" x2="23" y2="12" stroke="#F59E0B" stroke-width="1.5"/>
+      <rect x="10.5" y="10.5" width="3" height="3" fill="#F59E0B"/>
+    </svg>
+    <span class="nav-name">origin</span>
+  </div>
+  <div class="nav-links">
+    <a href="#what">What</a>
+    <a href="#devices">Devices</a>
+    <a href="#how">How</a>
+    <a href="#appstore">App Store</a>
+    <a href="https://github.com" target="_blank">GitHub</a>
+  </div>
+</nav>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="hero-grid"></div>
+  <div class="hero-axis-v"></div>
+  <div class="hero-axis-h"></div>
+
+  <div class="hero-bot">
+    <div class="bot-float">
+      <svg viewBox="0 0 160 180" fill="none" width="140" height="158">
+        <!-- Treads -->
+        <rect x="20" y="140" width="32" height="18" stroke="#E8E8E8" stroke-width="1.5" fill="none"/>
+        <rect x="108" y="140" width="32" height="18" stroke="#E8E8E8" stroke-width="1.5" fill="none"/>
+        <line x1="28" y1="140" x2="28" y2="158" stroke="#4A4A4A" stroke-width="0.75"/>
+        <line x1="36" y1="140" x2="36" y2="158" stroke="#4A4A4A" stroke-width="0.75"/>
+        <line x1="44" y1="140" x2="44" y2="158" stroke="#4A4A4A" stroke-width="0.75"/>
+        <line x1="116" y1="140" x2="116" y2="158" stroke="#4A4A4A" stroke-width="0.75"/>
+        <line x1="124" y1="140" x2="124" y2="158" stroke="#4A4A4A" stroke-width="0.75"/>
+        <line x1="132" y1="140" x2="132" y2="158" stroke="#4A4A4A" stroke-width="0.75"/>
+        <!-- Body -->
+        <rect x="30" y="86" width="100" height="54" stroke="#E8E8E8" stroke-width="1.5" fill="none"/>
+        <line x1="30" y1="106" x2="130" y2="106" stroke="#4A4A4A" stroke-width="0.75"/>
+        <rect x="40" y="112" width="12" height="6" stroke="#4A4A4A" stroke-width="0.75" fill="none"/>
+        <rect x="60" y="112" width="6" height="6" fill="#F59E0B" opacity="0.4"/>
+        <!-- Neck -->
+        <line x1="70" y1="86" x2="70" y2="68" stroke="#E8E8E8" stroke-width="1.5"/>
+        <line x1="90" y1="86" x2="90" y2="68" stroke="#E8E8E8" stroke-width="1.5"/>
+        <!-- Head -->
+        <rect x="54" y="40" width="52" height="30" stroke="#E8E8E8" stroke-width="1.5" fill="none"/>
+        <!-- Left eye stalk -->
+        <line x1="67" y1="40" x2="64" y2="26" stroke="#E8E8E8" stroke-width="1.5"/>
+        <!-- Left eye housing -->
+        <rect x="54" y="10" width="16" height="17" stroke="#E8E8E8" stroke-width="1.5" fill="none"/>
+        <!-- Left pupil -->
+        <rect x="58" y="12" width="8" height="5" fill="#F59E0B" class="eye-glow"/>
+        <!-- Right eye stalk -->
+        <line x1="93" y1="40" x2="96" y2="26" stroke="#E8E8E8" stroke-width="1.5"/>
+        <!-- Right eye housing -->
+        <rect x="90" y="10" width="16" height="17" stroke="#E8E8E8" stroke-width="1.5" fill="none"/>
+        <!-- Right pupil -->
+        <rect x="94" y="12" width="8" height="5" fill="#F59E0B" class="eye-glow"/>
+        <!-- Arms -->
+        <line x1="30" y1="96" x2="16" y2="110" stroke="#E8E8E8" stroke-width="1.5"/>
+        <rect x="10" y="108" width="8" height="5" stroke="#E8E8E8" stroke-width="1" fill="none"/>
+        <line x1="130" y1="96" x2="144" y2="110" stroke="#E8E8E8" stroke-width="1.5"/>
+        <rect x="142" y="108" width="8" height="5" stroke="#E8E8E8" stroke-width="1" fill="none"/>
+      </svg>
+    </div>
+  </div>
+
+  <div class="hero-content">
+    <h1 class="hero-title">Write code.<br><span>Control anything.</span></h1>
+    <p class="hero-sub">Origin is the runtime that sits between your TypeScript and any physical device — from Arduinos to robot dogs to humanoids. Flash the firmware once. Write apps forever.</p>
+    <div class="hero-actions">
+      <div class="btn-primary" style="cursor: default;">
+        <span>Origin App Store — Coming Soon</span>
+      </div>
+      <a class="btn-secondary" href="#how">
+        <span>How it works</span>
+        <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><line x1="3" y1="7" x2="11" y2="7" stroke="currentColor" stroke-width="1.5"/><line x1="8" y1="4" x2="11" y2="7" stroke="currentColor" stroke-width="1.5"/><line x1="8" y1="10" x2="11" y2="7" stroke="currentColor" stroke-width="1.5"/></svg>
+      </a>
+    </div>
+  </div>
+
+  <div class="hero-tag">
+    <span>Arduino · Unitree Go2 · Unitree H1 · ESP32 · Raspberry Pi · More</span>
+  </div>
+</section>
+
+<!-- TICKER -->
+<div class="ticker-wrap">
+  <div class="ticker">
+    <div class="ticker-item"><div class="t-dot"></div>registerSensor("ultrasonic", pins, 2, readDistance)</div>
+    <div class="ticker-item"><div class="t-dot"></div>origin.tick()</div>
+    <div class="ticker-item"><div class="t-dot"></div>await ctx.send("moveFwd")</div>
+    <div class="ticker-item"><div class="t-dot"></div>const readings = await ctx.read()</div>
+    <div class="ticker-item"><div class="t-dot"></div>registerAction("stop", stop)</div>
+    <div class="ticker-item"><div class="t-dot"></div>setTransport(new BluetoothAdapter())</div>
+    <div class="ticker-item"><div class="t-dot"></div>readings.distance < 10</div>
+    <div class="ticker-item"><div class="t-dot"></div>runModel("choreography", inputs)</div>
+    <!-- Duplicate for seamless loop -->
+    <div class="ticker-item"><div class="t-dot"></div>registerSensor("ultrasonic", pins, 2, readDistance)</div>
+    <div class="ticker-item"><div class="t-dot"></div>origin.tick()</div>
+    <div class="ticker-item"><div class="t-dot"></div>await ctx.send("moveFwd")</div>
+    <div class="ticker-item"><div class="t-dot"></div>const readings = await ctx.read()</div>
+    <div class="ticker-item"><div class="t-dot"></div>registerAction("stop", stop)</div>
+    <div class="ticker-item"><div class="t-dot"></div>setTransport(new BluetoothAdapter())</div>
+    <div class="ticker-item"><div class="t-dot"></div>readings.distance < 10</div>
+    <div class="ticker-item"><div class="t-dot"></div>runModel("choreography", inputs)</div>
+  </div>
+</div>
+
+<!-- WHAT IS ORIGIN -->
+<section id="what">
+  <div class="container">
+    <div class="reveal">
+      <div class="section-label">01 — What</div>
+      <h2 class="section-title">The zero point between<br>hardware and code</h2>
+      <p class="section-desc">Every robot, every microcontroller, every physical device follows the same loop: setup, sense, act, repeat. Origin is a thin runtime that standardizes this loop so you can write the logic that matters — in TypeScript, on your machine — while the device handles the physics.</p>
+    </div>
+
+    <div class="what-grid">
+      <div class="what-card reveal reveal-delay-1">
+        <div class="wc-number">01</div>
+        <div class="wc-title">Firmware SDK</div>
+        <div class="wc-text">A C++ library that runs on the device. Register your sensors, chips, and actions. Sensors auto-poll every tick. Actions persist until overridden. The entire loop is one call: origin.tick()</div>
+      </div>
+      <div class="what-card reveal reveal-delay-2">
+        <div class="wc-number">02</div>
+        <div class="wc-title">Host Runtime</div>
+        <div class="wc-text">A TypeScript server on your machine. Loads and runs apps that read sensor data and send actions to the device. The launcher owns the loop — your app is a clean module with setup, loop, and teardown.</div>
+      </div>
+      <div class="what-card reveal reveal-delay-3">
+        <div class="wc-number">03</div>
+        <div class="wc-title">Pluggable Transport</div>
+        <div class="wc-text">Bluetooth, WiFi, USB Serial — swap the adapter and everything upstream stays identical. JSON on the wire for v1. The firmware doesn't care how the action arrived.</div>
+      </div>
+      <div class="what-card reveal reveal-delay-4">
+        <div class="wc-number">04</div>
+        <div class="wc-title">App Ecosystem</div>
+        <div class="wc-text">Share apps with the community. An obstacle avoider, a gesture controller, an ML choreography engine — install it, point it at your device, run it. Origin App Store coming soon.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- DEVICES -->
+<section id="devices">
+  <div class="container">
+    <div class="reveal">
+      <div class="section-label">02 — Devices</div>
+      <h2 class="section-title">One runtime. Any device.</h2>
+      <p class="section-desc">Origin isn't just for Arduinos. Any device that can run a firmware loop and communicate over a transport adapter is an Origin device. From microcontrollers to quadruped robots to full humanoids.</p>
+    </div>
+
+    <div class="devices-strip">
+      <div class="device-card reveal reveal-delay-1">
+        <div class="dc-icon">
+          <!-- Arduino icon -->
+          <svg viewBox="0 0 64 64" fill="none" width="56" height="56">
+            <rect x="8" y="16" width="48" height="32" stroke="#E8E8E8" stroke-width="1.5" fill="none"/>
+            <rect x="14" y="22" width="8" height="8" stroke="#4A4A4A" stroke-width="1" fill="none"/>
+            <rect x="14" y="22" width="8" height="8" fill="rgba(245,158,11,0.15)"/>
+            <line x1="16" y1="16" x2="16" y2="12" stroke="#E8E8E8" stroke-width="1.5"/>
+            <line x1="24" y1="16" x2="24" y2="12" stroke="#E8E8E8" stroke-width="1.5"/>
+            <line x1="32" y1="16" x2="32" y2="12" stroke="#E8E8E8" stroke-width="1.5"/>
+            <line x1="40" y1="16" x2="40" y2="12" stroke="#E8E8E8" stroke-width="1.5"/>
+            <line x1="48" y1="16" x2="48" y2="12" stroke="#E8E8E8" stroke-width="1.5"/>
+            <rect x="42" y="36" width="8" height="6" stroke="#4A4A4A" stroke-width="1" fill="none"/>
+          </svg>
+        </div>
+        <div class="dc-name">Arduino</div>
+        <div class="dc-type">Microcontroller</div>
+        <div class="dc-status live">v1</div>
+      </div>
+
+      <div class="device-card reveal reveal-delay-2">
+        <div class="dc-icon">
+          <!-- ESP32 icon -->
+          <svg viewBox="0 0 64 64" fill="none" width="56" height="56">
+            <rect x="12" y="18" width="40" height="28" stroke="#E8E8E8" stroke-width="1.5" fill="none"/>
+            <rect x="22" y="26" width="20" height="12" stroke="#4A4A4A" stroke-width="1" fill="none"/>
+            <rect x="28" y="30" width="8" height="4" fill="#F59E0B" opacity="0.3"/>
+            <!-- WiFi waves -->
+            <line x1="32" y1="14" x2="32" y2="10" stroke="#F59E0B" stroke-width="1" opacity="0.4"/>
+            <line x1="26" y1="12" x2="32" y2="8" stroke="#F59E0B" stroke-width="1" opacity="0.3"/>
+            <line x1="38" y1="12" x2="32" y2="8" stroke="#F59E0B" stroke-width="1" opacity="0.3"/>
+            <line x1="16" y1="46" x2="16" y2="50" stroke="#E8E8E8" stroke-width="1.5"/>
+            <line x1="24" y1="46" x2="24" y2="50" stroke="#E8E8E8" stroke-width="1.5"/>
+            <line x1="40" y1="46" x2="40" y2="50" stroke="#E8E8E8" stroke-width="1.5"/>
+            <line x1="48" y1="46" x2="48" y2="50" stroke="#E8E8E8" stroke-width="1.5"/>
+          </svg>
+        </div>
+        <div class="dc-name">ESP32</div>
+        <div class="dc-type">Microcontroller + WiFi</div>
+        <div class="dc-status live">v1</div>
+      </div>
+
+      <div class="device-card reveal reveal-delay-3">
+        <div class="dc-icon">
+          <!-- Quadruped robot -->
+          <svg viewBox="0 0 64 64" fill="none" width="56" height="56">
+            <!-- Body -->
+            <rect x="14" y="20" width="36" height="16" stroke="#E8E8E8" stroke-width="1.5" fill="none"/>
+            <!-- Head -->
+            <rect x="42" y="14" width="14" height="12" stroke="#E8E8E8" stroke-width="1.5" fill="none"/>
+            <rect x="50" y="17" width="4" height="3" fill="#F59E0B"/>
+            <!-- Legs -->
+            <line x1="18" y1="36" x2="14" y2="52" stroke="#E8E8E8" stroke-width="1.5"/>
+            <line x1="14" y1="52" x2="10" y2="52" stroke="#E8E8E8" stroke-width="1.5"/>
+            <line x1="30" y1="36" x2="26" y2="52" stroke="#E8E8E8" stroke-width="1.5"/>
+            <line x1="26" y1="52" x2="22" y2="52" stroke="#E8E8E8" stroke-width="1.5"/>
+            <line x1="36" y1="36" x2="40" y2="52" stroke="#E8E8E8" stroke-width="1.5"/>
+            <line x1="40" y1="52" x2="44" y2="52" stroke="#E8E8E8" stroke-width="1.5"/>
+            <line x1="46" y1="36" x2="50" y2="52" stroke="#E8E8E8" stroke-width="1.5"/>
+            <line x1="50" y1="52" x2="54" y2="52" stroke="#E8E8E8" stroke-width="1.5"/>
+          </svg>
+        </div>
+        <div class="dc-name">Unitree Go2</div>
+        <div class="dc-type">Quadruped Robot</div>
+        <div class="dc-status soon">Coming</div>
+      </div>
+
+      <div class="device-card reveal reveal-delay-4">
+        <div class="dc-icon">
+          <!-- Humanoid robot -->
+          <svg viewBox="0 0 64 64" fill="none" width="56" height="56">
+            <!-- Head -->
+            <rect x="24" y="4" width="16" height="12" stroke="#E8E8E8" stroke-width="1.5" fill="none"/>
+            <rect x="28" y="7" width="3" height="3" fill="#F59E0B"/>
+            <rect x="34" y="7" width="3" height="3" fill="#F59E0B"/>
+            <!-- Neck -->
+            <line x1="32" y1="16" x2="32" y2="20" stroke="#E8E8E8" stroke-width="1.5"/>
+            <!-- Torso -->
+            <rect x="22" y="20" width="20" height="20" stroke="#E8E8E8" stroke-width="1.5" fill="none"/>
+            <line x1="22" y1="30" x2="42" y2="30" stroke="#4A4A4A" stroke-width="0.75"/>
+            <!-- Arms -->
+            <line x1="22" y1="22" x2="12" y2="34" stroke="#E8E8E8" stroke-width="1.5"/>
+            <line x1="12" y1="34" x2="12" y2="42" stroke="#E8E8E8" stroke-width="1.5"/>
+            <line x1="42" y1="22" x2="52" y2="34" stroke="#E8E8E8" stroke-width="1.5"/>
+            <line x1="52" y1="34" x2="52" y2="42" stroke="#E8E8E8" stroke-width="1.5"/>
+            <!-- Legs -->
+            <line x1="28" y1="40" x2="24" y2="56" stroke="#E8E8E8" stroke-width="1.5"/>
+            <line x1="24" y1="56" x2="20" y2="58" stroke="#E8E8E8" stroke-width="1.5"/>
+            <line x1="36" y1="40" x2="40" y2="56" stroke="#E8E8E8" stroke-width="1.5"/>
+            <line x1="40" y1="56" x2="44" y2="58" stroke="#E8E8E8" stroke-width="1.5"/>
+          </svg>
+        </div>
+        <div class="dc-name">Unitree H1</div>
+        <div class="dc-type">Humanoid Robot</div>
+        <div class="dc-status soon">Coming</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- HOW IT WORKS -->
+<section id="how">
+  <div class="container">
+    <div class="reveal">
+      <div class="section-label">03 — How</div>
+      <h2 class="section-title">Flash once. Build forever.</h2>
+      <p class="section-desc">Origin separates the hardware loop from your application logic. The device runs the physics — your code runs the brain.</p>
+    </div>
+
+    <div class="flow-steps reveal">
+      <div class="flow-step">
+        <div class="fs-number">01</div>
+        <div class="fs-title">Flash the firmware</div>
+        <div class="fs-text">Register your sensors, chips, and actions. Set a transport adapter. The device runs origin.tick() in a loop forever. You never touch the firmware again.</div>
+      </div>
+      <div class="flow-arrow">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><line x1="4" y1="12" x2="20" y2="12" stroke="currentColor" stroke-width="1.5"/><line x1="14" y1="6" x2="20" y2="12" stroke="currentColor" stroke-width="1.5"/><line x1="14" y1="18" x2="20" y2="12" stroke="currentColor" stroke-width="1.5"/></svg>
+      </div>
+      <div class="flow-step">
+        <div class="fs-number">02</div>
+        <div class="fs-title">Write your app</div>
+        <div class="fs-text">A TypeScript module with a loop function. Read sensor data, make decisions, send actions. Use ML, call APIs, run inference — anything your host machine can do.</div>
+      </div>
+      <div class="flow-arrow">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><line x1="4" y1="12" x2="20" y2="12" stroke="currentColor" stroke-width="1.5"/><line x1="14" y1="6" x2="20" y2="12" stroke="currentColor" stroke-width="1.5"/><line x1="14" y1="18" x2="20" y2="12" stroke="currentColor" stroke-width="1.5"/></svg>
+      </div>
+      <div class="flow-step">
+        <div class="fs-number">03</div>
+        <div class="fs-title">Launch</div>
+        <div class="fs-text">The launcher connects to your device, starts your app loop, and relays readings and actions in real time. Swap apps on the fly — no reflashing.</div>
+      </div>
+    </div>
+
+    <!-- Code sample -->
+    <div class="code-section reveal" style="margin-top: 64px;">
+      <div class="code-panel">
+        <div class="code-header">
+          <div class="code-dot" style="background: var(--phosphor);"></div>
+          <div class="code-filename">obstacle-avoider.ts</div>
+        </div>
+        <div class="code-body">
+<span class="kw">import</span> { OriginApp } <span class="kw">from</span> <span class="str">"@origin/core"</span>
+<br><br>
+<span class="kw">const</span> <span class="fn">app</span>: OriginApp = {
+<br>&nbsp;&nbsp;name: <span class="str">"obstacle-avoider"</span>,
+<br><br>
+&nbsp;&nbsp;<span class="kw">async</span> <span class="fn">loop</span>(ctx) {
+<br>&nbsp;&nbsp;&nbsp;&nbsp;<span class="kw">const</span> readings = <span class="kw">await</span> ctx.<span class="fn">read</span>()
+<br><br>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="kw">if</span> (readings.distance &lt; <span class="num">10</span>) {
+<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="kw">await</span> ctx.<span class="fn">send</span>(<span class="str">"moveBkwd"</span>)
+<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="kw">await</span> ctx.<span class="fn">send</span>(<span class="str">"turnRight"</span>)
+<br>&nbsp;&nbsp;&nbsp;&nbsp;} <span class="kw">else</span> {
+<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="kw">await</span> ctx.<span class="fn">send</span>(<span class="str">"moveFwd"</span>)
+<br>&nbsp;&nbsp;&nbsp;&nbsp;}
+<br>&nbsp;&nbsp;}
+<br>}
+<br><br>
+<span class="kw">export default</span> app
+        </div>
+      </div>
+      <div class="code-desc">
+        <div class="cd-title">This is the whole app.</div>
+        <div class="cd-text">No C++. No firmware. No pin configurations. Just read the sensors, make a decision, send an action. The device handles the rest.</div>
+        <div class="cd-text">This same app runs against an Arduino with an ultrasonic sensor, a Unitree Go2 with LIDAR, or anything else that exposes a distance reading through Origin.</div>
+        <div class="cd-highlight">The app doesn't know or care what device it's controlling. It just reads and acts.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- APP STORE -->
+<section id="appstore" class="appstore">
+  <div class="appstore-grid-bg"></div>
+  <div class="appstore-glow"></div>
+
+  <div class="appstore-content reveal">
+    <div class="as-pretitle">Coming Soon</div>
+    <h2>The <span>Origin</span> App Store</h2>
+    <p class="as-desc">Share apps with the community. Install an obstacle avoider, a gesture controller, an ML choreography engine — point it at your device and run it. Build once, run on any Origin-compatible device.</p>
+
+    <div class="appstore-btn">
+      <div class="btn-dot"></div>
+      Origin App Store — Coming Soon
+    </div>
+
+    <!-- Preview apps -->
+    <div class="appstore-apps reveal reveal-delay-2">
+      <div class="app-preview">
+        <div class="ap-icon"><div class="inner" style="background: var(--phosphor); opacity: 0.6;"></div></div>
+        <div class="ap-name">obstacle-avoider</div>
+        <div class="ap-author">origin/core</div>
+      </div>
+      <div class="app-preview">
+        <div class="ap-icon"><div class="inner" style="background: #93C5FD; opacity: 0.6;"></div></div>
+        <div class="ap-name">gesture-driver</div>
+        <div class="ap-author">origin/core</div>
+      </div>
+      <div class="app-preview">
+        <div class="ap-icon"><div class="inner" style="background: #86EFAC; opacity: 0.6;"></div></div>
+        <div class="ap-name">patrol-route</div>
+        <div class="ap-author">community</div>
+      </div>
+      <div class="app-preview">
+        <div class="ap-icon"><div class="inner" style="background: #FCA5A5; opacity: 0.6;"></div></div>
+        <div class="ap-name">ml-choreography</div>
+        <div class="ap-author">community</div>
+      </div>
+      <div class="app-preview">
+        <div class="ap-icon"><div class="inner" style="border: 1px solid var(--wire-bright);"></div></div>
+        <div class="ap-name">your-app</div>
+        <div class="ap-author">you</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <div class="footer-left">
+    <svg viewBox="0 0 24 24" fill="none" width="20" height="20">
+      <line x1="12" y1="1" x2="12" y2="9" stroke="#F59E0B" stroke-width="1.5"/>
+      <line x1="12" y1="15" x2="12" y2="23" stroke="#F59E0B" stroke-width="1.5"/>
+      <line x1="1" y1="12" x2="9" y2="12" stroke="#F59E0B" stroke-width="1.5"/>
+      <line x1="15" y1="12" x2="23" y2="12" stroke="#F59E0B" stroke-width="1.5"/>
+      <rect x="10.5" y="10.5" width="3" height="3" fill="#F59E0B"/>
+    </svg>
+    <span>origin</span>
+  </div>
+  <div class="footer-right">The zero point between hardware and code.</div>
+</footer>
+
+<!-- SCROLL REVEAL SCRIPT -->
+<script>
+  const reveals = document.querySelectorAll('.reveal');
+
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        entry.target.classList.add('visible');
+      }
+    });
+  }, {
+    threshold: 0.15,
+    rootMargin: '0px 0px -40px 0px'
+  });
+
+  reveals.forEach(el => observer.observe(el));
+</script>
+
+</body>
+</html>

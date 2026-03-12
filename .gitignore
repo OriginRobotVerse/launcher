@@ -1,5 +1,4 @@
 node_modules
-brand
+dist
 .env
 .env.local
-dist

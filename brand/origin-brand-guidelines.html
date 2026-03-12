@@ -1,0 +1,1828 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Origin — Brand Guidelines</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --void: #0A0A0A;
+    --panel: #111111;
+    --panel-raised: #161616;
+    --wire: #1E1E1E;
+    --wire-bright: #2A2A2A;
+    --signal: #E8E8E8;
+    --dim: #737373;
+    --dim-dark: #4A4A4A;
+    --phosphor: #F59E0B;
+    --phosphor-bright: #FBBF24;
+    --phosphor-dim: #92400E;
+    --phosphor-glow: rgba(245, 158, 11, 0.08);
+    --phosphor-glow-strong: rgba(245, 158, 11, 0.15);
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--void);
+    color: var(--signal);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 14px;
+    line-height: 1.7;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* ---- NAVIGATION ---- */
+  nav {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 100;
+    background: rgba(10, 10, 10, 0.9);
+    backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--wire);
+    padding: 0 48px;
+    height: 56px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .nav-brand {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }
+
+  .nav-brand svg { width: 24px; height: 24px; }
+
+  .nav-title {
+    font-size: 13px;
+    font-weight: 500;
+    letter-spacing: 0.05em;
+    color: var(--signal);
+  }
+
+  .nav-title span { color: var(--dim); }
+
+  .nav-links {
+    display: flex;
+    gap: 32px;
+  }
+
+  .nav-links a {
+    color: var(--dim);
+    text-decoration: none;
+    font-size: 12px;
+    letter-spacing: 0.04em;
+    transition: color 0.2s;
+  }
+
+  .nav-links a:hover { color: var(--phosphor); }
+
+  /* ---- HERO ---- */
+  .hero {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 120px 48px 80px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .hero-grid {
+    position: absolute;
+    inset: 0;
+    opacity: 0.04;
+    background-image:
+      linear-gradient(var(--phosphor) 1px, transparent 1px),
+      linear-gradient(90deg, var(--phosphor) 1px, transparent 1px);
+    background-size: 60px 60px;
+    background-position: center center;
+  }
+
+  .hero-axes {
+    position: absolute;
+    inset: 0;
+    opacity: 0.08;
+  }
+
+  .hero-axes::before,
+  .hero-axes::after {
+    content: '';
+    position: absolute;
+    background: var(--phosphor);
+  }
+
+  .hero-axes::before {
+    width: 1px;
+    height: 100%;
+    left: 50%;
+  }
+
+  .hero-axes::after {
+    height: 1px;
+    width: 100%;
+    top: 50%;
+  }
+
+  .hero-mark {
+    position: relative;
+    z-index: 2;
+    margin-bottom: 48px;
+  }
+
+  .hero-mark svg {
+    width: 120px;
+    height: 120px;
+    filter: drop-shadow(0 0 40px rgba(245, 158, 11, 0.2));
+  }
+
+  .hero-text {
+    text-align: center;
+    position: relative;
+    z-index: 2;
+  }
+
+  .hero-text h1 {
+    font-size: 48px;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    color: var(--signal);
+    margin-bottom: 16px;
+  }
+
+  .hero-text p {
+    font-size: 16px;
+    color: var(--dim);
+    font-weight: 300;
+    letter-spacing: 0.02em;
+  }
+
+  .hero-label {
+    margin-top: 48px;
+    font-size: 11px;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--dim-dark);
+    position: relative;
+    z-index: 2;
+  }
+
+  /* ---- SECTIONS ---- */
+  .container {
+    max-width: 1120px;
+    margin: 0 auto;
+    padding: 0 48px;
+  }
+
+  section {
+    padding: 120px 0;
+    border-top: 1px solid var(--wire);
+  }
+
+  .section-header {
+    margin-bottom: 64px;
+  }
+
+  .section-label {
+    font-size: 11px;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--phosphor);
+    margin-bottom: 16px;
+  }
+
+  .section-title {
+    font-size: 28px;
+    font-weight: 700;
+    letter-spacing: -0.01em;
+    color: var(--signal);
+    margin-bottom: 12px;
+  }
+
+  .section-desc {
+    font-size: 14px;
+    color: var(--dim);
+    max-width: 640px;
+    line-height: 1.8;
+  }
+
+  /* ---- ESSENCE ---- */
+  .essence-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1px;
+    background: var(--wire);
+    margin-bottom: 48px;
+  }
+
+  .essence-card {
+    background: var(--panel);
+    padding: 40px;
+  }
+
+  .essence-card .label {
+    font-size: 11px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--phosphor);
+    margin-bottom: 12px;
+  }
+
+  .essence-card .value {
+    font-size: 14px;
+    color: var(--signal);
+    line-height: 1.7;
+  }
+
+  .tagline-block {
+    background: var(--panel);
+    border: 1px solid var(--wire);
+    padding: 48px;
+    text-align: center;
+  }
+
+  .tagline-block .pre {
+    font-size: 11px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--dim-dark);
+    margin-bottom: 16px;
+  }
+
+  .tagline {
+    font-size: 22px;
+    font-weight: 700;
+    color: var(--signal);
+  }
+
+  .tagline em {
+    font-style: normal;
+    color: var(--phosphor);
+  }
+
+  /* ---- LOGO ---- */
+  .logo-showcase {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 1px;
+    background: var(--wire);
+    margin-bottom: 48px;
+  }
+
+  .logo-cell {
+    background: var(--panel);
+    padding: 48px 32px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 24px;
+  }
+
+  .logo-cell svg {
+    flex-shrink: 0;
+  }
+
+  .logo-cell .variant-name {
+    font-size: 11px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--dim);
+  }
+
+  .logo-cell .variant-use {
+    font-size: 12px;
+    color: var(--dim-dark);
+    text-align: center;
+    line-height: 1.6;
+  }
+
+  .construction-wrap {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1px;
+    background: var(--wire);
+    margin-bottom: 48px;
+  }
+
+  .construction-visual {
+    background: var(--panel);
+    padding: 64px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .construction-rules {
+    background: var(--panel);
+    padding: 48px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+  }
+
+  .rule-item {
+    padding: 16px 0;
+    border-bottom: 1px solid var(--wire);
+  }
+
+  .rule-item:last-child { border-bottom: none; }
+
+  .rule-item .rule-label {
+    font-size: 11px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--phosphor);
+    margin-bottom: 6px;
+  }
+
+  .rule-item .rule-text {
+    font-size: 13px;
+    color: var(--dim);
+    line-height: 1.6;
+  }
+
+  /* ---- CLEAR SPACE / SIZING ---- */
+  .spacing-demo {
+    background: var(--panel);
+    border: 1px solid var(--wire);
+    padding: 64px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 48px;
+    position: relative;
+  }
+
+  .spacing-box {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .spacing-box .boundary {
+    position: absolute;
+    inset: -32px;
+    border: 1px dashed var(--phosphor-dim);
+  }
+
+  .spacing-box .measure-label {
+    position: absolute;
+    font-size: 10px;
+    color: var(--phosphor);
+    letter-spacing: 0.08em;
+  }
+
+  .spacing-box .measure-top {
+    top: -48px;
+    left: 50%;
+    transform: translateX(-50%);
+  }
+
+  .spacing-box .measure-right {
+    right: -64px;
+    top: 50%;
+    transform: translateY(-50%);
+  }
+
+  .min-sizes {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1px;
+    background: var(--wire);
+  }
+
+  .min-size-cell {
+    background: var(--panel);
+    padding: 32px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 16px;
+  }
+
+  .min-size-cell .size-label {
+    font-size: 11px;
+    color: var(--dim);
+    letter-spacing: 0.08em;
+  }
+
+  /* ---- COLOR ---- */
+  .color-primary-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1px;
+    background: var(--wire);
+    margin-bottom: 48px;
+  }
+
+  .color-swatch {
+    background: var(--panel);
+    overflow: hidden;
+  }
+
+  .color-swatch .swatch-fill {
+    height: 100px;
+  }
+
+  .color-swatch.large .swatch-fill {
+    height: 140px;
+  }
+
+  .color-swatch .swatch-info {
+    padding: 20px;
+  }
+
+  .color-swatch .swatch-name {
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--signal);
+    margin-bottom: 4px;
+  }
+
+  .color-swatch .swatch-hex {
+    font-size: 12px;
+    color: var(--dim);
+    margin-bottom: 8px;
+  }
+
+  .color-swatch .swatch-role {
+    font-size: 11px;
+    color: var(--dim-dark);
+    line-height: 1.5;
+  }
+
+  .color-accent-row {
+    display: grid;
+    grid-template-columns: 2fr 1fr 1fr;
+    gap: 1px;
+    background: var(--wire);
+    margin-bottom: 48px;
+  }
+
+  .color-rules-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1px;
+    background: var(--wire);
+    margin-bottom: 48px;
+  }
+
+  .color-rule {
+    background: var(--panel);
+    padding: 32px;
+  }
+
+  .color-rule .cr-icon {
+    font-size: 16px;
+    margin-bottom: 12px;
+  }
+
+  .color-rule .cr-title {
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--signal);
+    margin-bottom: 8px;
+  }
+
+  .color-rule .cr-text {
+    font-size: 12px;
+    color: var(--dim);
+    line-height: 1.6;
+  }
+
+  /* ---- TYPOGRAPHY ---- */
+  .type-specimen {
+    background: var(--panel);
+    border: 1px solid var(--wire);
+    padding: 64px;
+    margin-bottom: 48px;
+  }
+
+  .type-huge {
+    font-size: 72px;
+    font-weight: 700;
+    letter-spacing: -0.03em;
+    color: var(--signal);
+    line-height: 1;
+    margin-bottom: 24px;
+  }
+
+  .type-large {
+    font-size: 36px;
+    font-weight: 300;
+    color: var(--dim);
+    line-height: 1.2;
+    margin-bottom: 40px;
+  }
+
+  .type-mono-grid {
+    display: flex;
+    gap: 16px;
+    flex-wrap: wrap;
+  }
+
+  .type-char {
+    width: 48px;
+    height: 48px;
+    background: var(--void);
+    border: 1px solid var(--wire);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+    color: var(--phosphor);
+  }
+
+  .type-scale {
+    display: grid;
+    grid-template-columns: 120px 1fr;
+    gap: 1px;
+    background: var(--wire);
+    margin-bottom: 48px;
+  }
+
+  .type-scale-label {
+    background: var(--panel);
+    padding: 24px;
+    display: flex;
+    align-items: center;
+  }
+
+  .type-scale-label span {
+    font-size: 11px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--dim);
+  }
+
+  .type-scale-demo {
+    background: var(--panel);
+    padding: 24px 32px;
+    display: flex;
+    align-items: baseline;
+    gap: 16px;
+  }
+
+  .type-scale-demo .size-note {
+    font-size: 11px;
+    color: var(--dim-dark);
+    flex-shrink: 0;
+    min-width: 64px;
+  }
+
+  .type-weights {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1px;
+    background: var(--wire);
+  }
+
+  .type-weight-cell {
+    background: var(--panel);
+    padding: 32px;
+    text-align: center;
+  }
+
+  .type-weight-cell .tw-demo {
+    font-size: 32px;
+    color: var(--signal);
+    margin-bottom: 12px;
+  }
+
+  .type-weight-cell .tw-name {
+    font-size: 11px;
+    color: var(--dim);
+    letter-spacing: 0.08em;
+  }
+
+  /* ---- ICONOGRAPHY ---- */
+  .icon-grid {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 1px;
+    background: var(--wire);
+    margin-bottom: 48px;
+  }
+
+  .icon-cell {
+    background: var(--panel);
+    padding: 32px 24px 24px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 16px;
+    min-height: 140px;
+  }
+
+  .icon-cell svg {
+    flex-shrink: 0;
+  }
+
+  .icon-cell .icon-name {
+    font-size: 11px;
+    color: var(--dim);
+    letter-spacing: 0.06em;
+  }
+
+  .icon-rules {
+    background: var(--panel);
+    border: 1px solid var(--wire);
+    padding: 40px;
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 40px;
+  }
+
+  .icon-rule-item .iri-title {
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--signal);
+    margin-bottom: 8px;
+  }
+
+  .icon-rule-item .iri-text {
+    font-size: 12px;
+    color: var(--dim);
+    line-height: 1.6;
+  }
+
+  /* ---- USAGE ---- */
+  .do-dont-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1px;
+    background: var(--wire);
+    margin-bottom: 48px;
+  }
+
+  .do-dont-cell {
+    background: var(--panel);
+    padding: 40px;
+  }
+
+  .do-dont-cell .dd-label {
+    font-size: 11px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    margin-bottom: 24px;
+    font-weight: 700;
+  }
+
+  .do-dont-cell .dd-label.do { color: #22C55E; }
+  .do-dont-cell .dd-label.dont { color: #EF4444; }
+
+  .dd-item {
+    padding: 10px 0;
+    font-size: 13px;
+    color: var(--dim);
+    line-height: 1.6;
+    border-bottom: 1px solid var(--wire);
+  }
+
+  .dd-item:last-child { border-bottom: none; }
+
+  .do-dont-cell .dd-example {
+    margin-top: 24px;
+    padding: 32px;
+    background: var(--void);
+    border: 1px solid var(--wire);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  /* ---- BACKGROUNDS ---- */
+  .bg-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 1px;
+    background: var(--wire);
+    margin-bottom: 48px;
+  }
+
+  .bg-cell {
+    padding: 48px 32px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 24px;
+  }
+
+  .bg-cell .bg-name {
+    font-size: 11px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+  }
+
+  /* ---- MOTION ---- */
+  .motion-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 1px;
+    background: var(--wire);
+    margin-bottom: 48px;
+  }
+
+  .motion-cell {
+    background: var(--panel);
+    padding: 40px;
+    text-align: center;
+  }
+
+  .motion-cell .mc-title {
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--signal);
+    margin-bottom: 8px;
+  }
+
+  .motion-cell .mc-value {
+    font-size: 22px;
+    color: var(--phosphor);
+    margin-bottom: 8px;
+    font-weight: 300;
+  }
+
+  .motion-cell .mc-code {
+    font-size: 11px;
+    color: var(--dim-dark);
+  }
+
+  .motion-demo {
+    display: flex;
+    gap: 32px;
+    align-items: center;
+    justify-content: center;
+    padding: 48px;
+    background: var(--panel);
+    border: 1px solid var(--wire);
+  }
+
+  .motion-box {
+    width: 48px;
+    height: 48px;
+    background: var(--phosphor);
+    transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    cursor: pointer;
+  }
+
+  .motion-box:hover { transform: translateY(-8px); }
+
+  .motion-box.b2 {
+    background: var(--phosphor-dim);
+    transition-duration: 0.2s;
+  }
+
+  .motion-box.b3 {
+    background: transparent;
+    border: 1px solid var(--phosphor);
+    transition-duration: 0.4s;
+  }
+
+  .motion-box.b3:hover { transform: scale(1.1); }
+
+  /* ---- FOOTER ---- */
+  footer {
+    border-top: 1px solid var(--wire);
+    padding: 48px;
+    text-align: center;
+  }
+
+  footer .f-brand {
+    font-size: 13px;
+    color: var(--dim-dark);
+    margin-bottom: 8px;
+  }
+
+  footer .f-brand span { color: var(--phosphor); }
+
+  footer .f-copy {
+    font-size: 11px;
+    color: var(--dim-dark);
+  }
+
+  /* ---- SUB-HEADER ---- */
+  .sub-header {
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--signal);
+    margin-bottom: 24px;
+    margin-top: 48px;
+  }
+
+  .sub-header:first-of-type {
+    margin-top: 0;
+  }
+
+  .prose {
+    font-size: 13px;
+    color: var(--dim);
+    line-height: 1.8;
+    max-width: 640px;
+    margin-bottom: 32px;
+  }
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav>
+  <div class="nav-brand">
+    <svg viewBox="0 0 24 24" fill="none">
+      <line x1="12" y1="1" x2="12" y2="9" stroke="#F59E0B" stroke-width="1.5"/>
+      <line x1="12" y1="15" x2="12" y2="23" stroke="#F59E0B" stroke-width="1.5"/>
+      <line x1="1" y1="12" x2="9" y2="12" stroke="#F59E0B" stroke-width="1.5"/>
+      <line x1="15" y1="12" x2="23" y2="12" stroke="#F59E0B" stroke-width="1.5"/>
+      <rect x="10.5" y="10.5" width="3" height="3" fill="#F59E0B"/>
+    </svg>
+    <div class="nav-title">origin <span>brand guidelines</span></div>
+  </div>
+  <div class="nav-links">
+    <a href="#essence">Essence</a>
+    <a href="#logo">Logo</a>
+    <a href="#color">Color</a>
+    <a href="#typography">Typography</a>
+    <a href="#iconography">Iconography</a>
+    <a href="#usage">Usage</a>
+  </div>
+</nav>
+
+<!-- HERO -->
+<div class="hero">
+  <div class="hero-grid"></div>
+  <div class="hero-axes"></div>
+  <div class="hero-mark">
+    <svg viewBox="0 0 120 120" fill="none">
+      <!-- Axes -->
+      <line x1="60" y1="4" x2="60" y2="48" stroke="#F59E0B" stroke-width="1.5"/>
+      <line x1="60" y1="72" x2="60" y2="116" stroke="#F59E0B" stroke-width="1.5"/>
+      <line x1="4" y1="60" x2="48" y2="60" stroke="#F59E0B" stroke-width="1.5"/>
+      <line x1="72" y1="60" x2="116" y2="60" stroke="#F59E0B" stroke-width="1.5"/>
+      <!-- Tick marks -->
+      <line x1="30" y1="57" x2="30" y2="63" stroke="#F59E0B" stroke-width="1" opacity="0.4"/>
+      <line x1="90" y1="57" x2="90" y2="63" stroke="#F59E0B" stroke-width="1" opacity="0.4"/>
+      <line x1="57" y1="30" x2="63" y2="30" stroke="#F59E0B" stroke-width="1" opacity="0.4"/>
+      <line x1="57" y1="90" x2="63" y2="90" stroke="#F59E0B" stroke-width="1" opacity="0.4"/>
+      <!-- Origin point -->
+      <rect x="54" y="54" width="12" height="12" fill="#F59E0B"/>
+    </svg>
+  </div>
+  <div class="hero-text">
+    <h1>origin</h1>
+    <p>The zero point between hardware and code</p>
+  </div>
+  <div class="hero-label">Brand Guidelines v1.0</div>
+</div>
+
+<!-- ESSENCE -->
+<section id="essence">
+  <div class="container">
+    <div class="section-header">
+      <div class="section-label">01 — Essence</div>
+      <h2 class="section-title">Brand Character</h2>
+      <p class="section-desc">Origin is the mathematical zero point — (0,0) — the fixed reference from which everything is measured. The precise coordinate where firmware stops being code you fight with and becomes infrastructure you build on.</p>
+    </div>
+
+    <div class="essence-grid">
+      <div class="essence-card">
+        <div class="label">Precise</div>
+        <div class="value">A coordinate system. Exact, reliable, zero ambiguity. The firmware loop is a single call: origin.tick()</div>
+      </div>
+      <div class="essence-card">
+        <div class="label">Bridging</div>
+        <div class="value">Two worlds connected — the physical (Arduino, sensors, motors) and the logical (TypeScript, ML, application code).</div>
+      </div>
+      <div class="essence-card">
+        <div class="label">Foundational</div>
+        <div class="value">The base layer. Flash once, build forever. All logic changes happen on the host — the firmware is fixed infrastructure.</div>
+      </div>
+      <div class="essence-card">
+        <div class="label">Minimal</div>
+        <div class="value">Stays out of the way. Register your hardware, define your actions, and Origin handles the rest. No boilerplate, no ceremony.</div>
+      </div>
+    </div>
+
+    <div class="tagline-block">
+      <div class="pre">Tagline</div>
+      <div class="tagline"><em>Origin</em> — The zero point between hardware and code.</div>
+    </div>
+  </div>
+</section>
+
+<!-- LOGO -->
+<section id="logo">
+  <div class="container">
+    <div class="section-header">
+      <div class="section-label">02 — Logo</div>
+      <h2 class="section-title">The Origin Point</h2>
+      <p class="section-desc">A crosshair centered on a coordinate origin. Two perpendicular axes intersect with a solid square at center — the (0,0) point. Sharp, geometric, zero border-radius. The lines break around the center point so it floats at the intersection.</p>
+    </div>
+
+    <!-- Three variants -->
+    <div class="logo-showcase">
+      <!-- Mark only -->
+      <div class="logo-cell">
+        <svg viewBox="0 0 64 64" fill="none" width="64" height="64">
+          <line x1="32" y1="4" x2="32" y2="25" stroke="#F59E0B" stroke-width="1.5"/>
+          <line x1="32" y1="39" x2="32" y2="60" stroke="#F59E0B" stroke-width="1.5"/>
+          <line x1="4" y1="32" x2="25" y2="32" stroke="#F59E0B" stroke-width="1.5"/>
+          <line x1="39" y1="32" x2="60" y2="32" stroke="#F59E0B" stroke-width="1.5"/>
+          <rect x="28" y="28" width="8" height="8" fill="#F59E0B"/>
+        </svg>
+        <div class="variant-name">Mark Only</div>
+        <div class="variant-use">Favicons, app icons, small contexts</div>
+      </div>
+      <!-- Wordmark -->
+      <div class="logo-cell">
+        <svg viewBox="0 0 220 48" fill="none" width="220" height="48">
+          <line x1="24" y1="4" x2="24" y2="18" stroke="#F59E0B" stroke-width="1.5"/>
+          <line x1="24" y1="30" x2="24" y2="44" stroke="#F59E0B" stroke-width="1.5"/>
+          <line x1="4" y1="24" x2="18" y2="24" stroke="#F59E0B" stroke-width="1.5"/>
+          <line x1="30" y1="24" x2="44" y2="24" stroke="#F59E0B" stroke-width="1.5"/>
+          <rect x="21" y="21" width="6" height="6" fill="#F59E0B"/>
+          <text x="60" y="30" font-family="JetBrains Mono, monospace" font-size="22" font-weight="700" fill="#E8E8E8">origin</text>
+        </svg>
+        <div class="variant-name">Wordmark</div>
+        <div class="variant-use">Headers, documentation, navigation</div>
+      </div>
+      <!-- Full lockup -->
+      <div class="logo-cell">
+        <svg viewBox="0 0 220 48" fill="none" width="220" height="48">
+          <line x1="24" y1="4" x2="24" y2="18" stroke="#F59E0B" stroke-width="1.5"/>
+          <line x1="24" y1="30" x2="24" y2="44" stroke="#F59E0B" stroke-width="1.5"/>
+          <line x1="4" y1="24" x2="18" y2="24" stroke="#F59E0B" stroke-width="1.5"/>
+          <line x1="30" y1="24" x2="44" y2="24" stroke="#F59E0B" stroke-width="1.5"/>
+          <rect x="21" y="21" width="6" height="6" fill="#F59E0B"/>
+          <text x="56" y="28" font-family="JetBrains Mono, monospace" font-size="20" font-weight="700" fill="#E8E8E8">origin</text>
+        </svg>
+        <div class="variant-name">Full Lockup</div>
+        <div class="variant-use">Landing pages, presentations, hero sections</div>
+      </div>
+    </div>
+
+    <!-- Construction & Rules -->
+    <h3 class="sub-header">Construction</h3>
+    <div class="construction-wrap">
+      <div class="construction-visual">
+        <svg viewBox="0 0 200 200" fill="none" width="200" height="200">
+          <!-- Grid -->
+          <line x1="0" y1="100" x2="200" y2="100" stroke="#1E1E1E" stroke-width="1"/>
+          <line x1="100" y1="0" x2="100" y2="200" stroke="#1E1E1E" stroke-width="1"/>
+          <line x1="50" y1="0" x2="50" y2="200" stroke="#1E1E1E" stroke-width="0.5" stroke-dasharray="4 4" opacity="0.3"/>
+          <line x1="150" y1="0" x2="150" y2="200" stroke="#1E1E1E" stroke-width="0.5" stroke-dasharray="4 4" opacity="0.3"/>
+          <line x1="0" y1="50" x2="200" y2="50" stroke="#1E1E1E" stroke-width="0.5" stroke-dasharray="4 4" opacity="0.3"/>
+          <line x1="0" y1="150" x2="200" y2="150" stroke="#1E1E1E" stroke-width="0.5" stroke-dasharray="4 4" opacity="0.3"/>
+          <!-- Axes -->
+          <line x1="100" y1="12" x2="100" y2="80" stroke="#F59E0B" stroke-width="2"/>
+          <line x1="100" y1="120" x2="100" y2="188" stroke="#F59E0B" stroke-width="2"/>
+          <line x1="12" y1="100" x2="80" y2="100" stroke="#F59E0B" stroke-width="2"/>
+          <line x1="120" y1="100" x2="188" y2="100" stroke="#F59E0B" stroke-width="2"/>
+          <!-- Tick marks -->
+          <line x1="50" y1="95" x2="50" y2="105" stroke="#F59E0B" stroke-width="1" opacity="0.5"/>
+          <line x1="150" y1="95" x2="150" y2="105" stroke="#F59E0B" stroke-width="1" opacity="0.5"/>
+          <line x1="95" y1="50" x2="105" y2="50" stroke="#F59E0B" stroke-width="1" opacity="0.5"/>
+          <line x1="95" y1="150" x2="105" y2="150" stroke="#F59E0B" stroke-width="1" opacity="0.5"/>
+          <!-- Center point -->
+          <rect x="90" y="90" width="20" height="20" fill="#F59E0B"/>
+          <!-- Gap indicators -->
+          <rect x="82" y="82" width="36" height="36" stroke="#92400E" stroke-width="1" fill="none" stroke-dasharray="2 2"/>
+          <!-- Dimension callout -->
+          <text x="100" y="8" font-family="JetBrains Mono" font-size="8" fill="#737373" text-anchor="middle">1x</text>
+          <text x="196" y="104" font-family="JetBrains Mono" font-size="8" fill="#737373">1x</text>
+        </svg>
+      </div>
+      <div class="construction-rules">
+        <div class="rule-item">
+          <div class="rule-label">Center Point</div>
+          <div class="rule-text">Solid square. Never a circle. Zero border-radius. Size = 1 unit on the grid.</div>
+        </div>
+        <div class="rule-item">
+          <div class="rule-label">Axes</div>
+          <div class="rule-text">Two perpendicular lines of equal length, extending from the gap edge outward. Stroke weight is consistent.</div>
+        </div>
+        <div class="rule-item">
+          <div class="rule-label">Gap</div>
+          <div class="rule-text">Lines break around the center square. Gap width = center square width. The point floats at the intersection.</div>
+        </div>
+        <div class="rule-item">
+          <div class="rule-label">Tick Marks</div>
+          <div class="rule-text">Optional. Small perpendicular ticks at equal intervals along the axes. Used in detailed variant only. Reduced opacity.</div>
+        </div>
+        <div class="rule-item">
+          <div class="rule-label">Proportion</div>
+          <div class="rule-text">Axis length from gap to terminal = 3.5× the center square width. Total mark fits a square bounding box.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Clear space -->
+    <h3 class="sub-header">Clear Space</h3>
+    <div class="spacing-demo">
+      <div class="spacing-box">
+        <div class="boundary"></div>
+        <span class="measure-label measure-top">≥ 1× center</span>
+        <span class="measure-label measure-right">≥ 1× center</span>
+        <svg viewBox="0 0 64 64" fill="none" width="64" height="64">
+          <line x1="32" y1="4" x2="32" y2="25" stroke="#F59E0B" stroke-width="1.5"/>
+          <line x1="32" y1="39" x2="32" y2="60" stroke="#F59E0B" stroke-width="1.5"/>
+          <line x1="4" y1="32" x2="25" y2="32" stroke="#F59E0B" stroke-width="1.5"/>
+          <line x1="39" y1="32" x2="60" y2="32" stroke="#F59E0B" stroke-width="1.5"/>
+          <rect x="28" y="28" width="8" height="8" fill="#F59E0B"/>
+        </svg>
+      </div>
+    </div>
+
+    <!-- Minimum sizes -->
+    <h3 class="sub-header">Minimum Sizes</h3>
+    <div class="min-sizes">
+      <div class="min-size-cell">
+        <svg viewBox="0 0 64 64" fill="none" width="48" height="48">
+          <line x1="32" y1="4" x2="32" y2="25" stroke="#F59E0B" stroke-width="1.5"/>
+          <line x1="32" y1="39" x2="32" y2="60" stroke="#F59E0B" stroke-width="1.5"/>
+          <line x1="4" y1="32" x2="25" y2="32" stroke="#F59E0B" stroke-width="1.5"/>
+          <line x1="39" y1="32" x2="60" y2="32" stroke="#F59E0B" stroke-width="1.5"/>
+          <rect x="28" y="28" width="8" height="8" fill="#F59E0B"/>
+        </svg>
+        <div class="size-label">48px — Digital</div>
+      </div>
+      <div class="min-size-cell">
+        <svg viewBox="0 0 64 64" fill="none" width="32" height="32">
+          <line x1="32" y1="4" x2="32" y2="25" stroke="#F59E0B" stroke-width="2"/>
+          <line x1="32" y1="39" x2="32" y2="60" stroke="#F59E0B" stroke-width="2"/>
+          <line x1="4" y1="32" x2="25" y2="32" stroke="#F59E0B" stroke-width="2"/>
+          <line x1="39" y1="32" x2="60" y2="32" stroke="#F59E0B" stroke-width="2"/>
+          <rect x="28" y="28" width="8" height="8" fill="#F59E0B"/>
+        </svg>
+        <div class="size-label">32px — Small</div>
+      </div>
+      <div class="min-size-cell">
+        <svg viewBox="0 0 64 64" fill="none" width="20" height="20">
+          <line x1="32" y1="4" x2="32" y2="25" stroke="#F59E0B" stroke-width="3"/>
+          <line x1="32" y1="39" x2="32" y2="60" stroke="#F59E0B" stroke-width="3"/>
+          <line x1="4" y1="32" x2="25" y2="32" stroke="#F59E0B" stroke-width="3"/>
+          <line x1="39" y1="32" x2="60" y2="32" stroke="#F59E0B" stroke-width="3"/>
+          <rect x="27" y="27" width="10" height="10" fill="#F59E0B"/>
+        </svg>
+        <div class="size-label">20px — Favicon</div>
+      </div>
+      <div class="min-size-cell">
+        <svg viewBox="0 0 64 64" fill="none" width="16" height="16">
+          <line x1="32" y1="2" x2="32" y2="24" stroke="#F59E0B" stroke-width="4"/>
+          <line x1="32" y1="40" x2="32" y2="62" stroke="#F59E0B" stroke-width="4"/>
+          <line x1="2" y1="32" x2="24" y2="32" stroke="#F59E0B" stroke-width="4"/>
+          <line x1="40" y1="32" x2="62" y2="32" stroke="#F59E0B" stroke-width="4"/>
+          <rect x="26" y="26" width="12" height="12" fill="#F59E0B"/>
+        </svg>
+        <div class="size-label">16px — Minimum</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- COLOR -->
+<section id="color">
+  <div class="container">
+    <div class="section-header">
+      <div class="section-label">03 — Color</div>
+      <h2 class="section-title">Phosphor Amber</h2>
+      <p class="section-desc">Origin's accent evokes oscilloscope screens, signal indicators, and the warm glow of active hardware. Bright, saturated amber — an active signal cutting through the dark.</p>
+    </div>
+
+    <!-- Neutral palette -->
+    <h3 class="sub-header">Neutral Palette</h3>
+    <div class="color-primary-grid">
+      <div class="color-swatch">
+        <div class="swatch-fill" style="background: #0A0A0A; border-bottom: 1px solid #1E1E1E;"></div>
+        <div class="swatch-info">
+          <div class="swatch-name">Void</div>
+          <div class="swatch-hex">#0A0A0A</div>
+          <div class="swatch-role">Primary background</div>
+        </div>
+      </div>
+      <div class="color-swatch">
+        <div class="swatch-fill" style="background: #111111;"></div>
+        <div class="swatch-info">
+          <div class="swatch-name">Panel</div>
+          <div class="swatch-hex">#111111</div>
+          <div class="swatch-role">Cards, elevated surfaces</div>
+        </div>
+      </div>
+      <div class="color-swatch">
+        <div class="swatch-fill" style="background: #1E1E1E;"></div>
+        <div class="swatch-info">
+          <div class="swatch-name">Wire</div>
+          <div class="swatch-hex">#1E1E1E</div>
+          <div class="swatch-role">Borders, structural lines</div>
+        </div>
+      </div>
+      <div class="color-swatch">
+        <div class="swatch-fill" style="background: #2A2A2A;"></div>
+        <div class="swatch-info">
+          <div class="swatch-name">Wire Bright</div>
+          <div class="swatch-hex">#2A2A2A</div>
+          <div class="swatch-role">Hover borders, active dividers</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="color-primary-grid" style="margin-bottom: 48px;">
+      <div class="color-swatch">
+        <div class="swatch-fill" style="background: #E8E8E8;"></div>
+        <div class="swatch-info">
+          <div class="swatch-name">Signal</div>
+          <div class="swatch-hex">#E8E8E8</div>
+          <div class="swatch-role">Primary text</div>
+        </div>
+      </div>
+      <div class="color-swatch">
+        <div class="swatch-fill" style="background: #737373;"></div>
+        <div class="swatch-info">
+          <div class="swatch-name">Dim</div>
+          <div class="swatch-hex">#737373</div>
+          <div class="swatch-role">Secondary text, labels</div>
+        </div>
+      </div>
+      <div class="color-swatch">
+        <div class="swatch-fill" style="background: #4A4A4A;"></div>
+        <div class="swatch-info">
+          <div class="swatch-name">Dim Dark</div>
+          <div class="swatch-hex">#4A4A4A</div>
+          <div class="swatch-role">Tertiary text, captions</div>
+        </div>
+      </div>
+      <div class="color-swatch">
+        <div class="swatch-fill" style="background: #161616;"></div>
+        <div class="swatch-info">
+          <div class="swatch-name">Panel Raised</div>
+          <div class="swatch-hex">#161616</div>
+          <div class="swatch-role">Hover states, raised panels</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Accent palette -->
+    <h3 class="sub-header">Accent Palette</h3>
+    <div class="color-accent-row">
+      <div class="color-swatch large">
+        <div class="swatch-fill" style="background: #F59E0B; height: 140px;"></div>
+        <div class="swatch-info">
+          <div class="swatch-name">Phosphor</div>
+          <div class="swatch-hex">#F59E0B</div>
+          <div class="swatch-role">Primary accent — interactive elements, highlights, the origin point</div>
+        </div>
+      </div>
+      <div class="color-swatch large">
+        <div class="swatch-fill" style="background: #FBBF24; height: 140px;"></div>
+        <div class="swatch-info">
+          <div class="swatch-name">Phosphor Bright</div>
+          <div class="swatch-hex">#FBBF24</div>
+          <div class="swatch-role">Hover states, active indicators</div>
+        </div>
+      </div>
+      <div class="color-swatch large">
+        <div class="swatch-fill" style="background: #92400E; height: 140px;"></div>
+        <div class="swatch-info">
+          <div class="swatch-name">Phosphor Dim</div>
+          <div class="swatch-hex">#92400E</div>
+          <div class="swatch-role">Tags, muted backgrounds</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Color rules -->
+    <h3 class="sub-header">Rules</h3>
+    <div class="color-rules-grid">
+      <div class="color-rule">
+        <div class="cr-icon">◼</div>
+        <div class="cr-title">One accent, sparingly</div>
+        <div class="cr-text">Phosphor amber on interactive elements, the origin point, active states, and key data. Never as large background fills.</div>
+      </div>
+      <div class="color-rule">
+        <div class="cr-icon">◼</div>
+        <div class="cr-title">Dark backgrounds only</div>
+        <div class="cr-text">Origin never uses a light theme. The void is the canvas. All content sits on #0A0A0A or elevated surfaces.</div>
+      </div>
+      <div class="color-rule">
+        <div class="cr-icon">◼</div>
+        <div class="cr-title">No gradients</div>
+        <div class="cr-text">Flat color only. Gradients dilute precision. Depth comes from surface elevation, not blending.</div>
+      </div>
+      <div class="color-rule">
+        <div class="cr-icon">◼</div>
+        <div class="cr-title">Structural borders</div>
+        <div class="cr-text">Wire (#1E1E1E) delineates panels. It's architecture, not ornament. Borders define space, they don't decorate it.</div>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<!-- TYPOGRAPHY -->
+<section id="typography">
+  <div class="container">
+    <div class="section-header">
+      <div class="section-label">04 — Typography</div>
+      <h2 class="section-title">JetBrains Mono</h2>
+      <p class="section-desc">One typeface. Monospace only. The fixed-width grid reinforces precision and the coordinate-system metaphor. No secondary face — everything runs through the same font at different weights.</p>
+    </div>
+
+    <!-- Specimen -->
+    <div class="type-specimen">
+      <div class="type-huge">origin.tick()</div>
+      <div class="type-large">The zero point between hardware and code</div>
+      <div class="type-mono-grid">
+        <div class="type-char">A</div>
+        <div class="type-char">B</div>
+        <div class="type-char">C</div>
+        <div class="type-char">0</div>
+        <div class="type-char">1</div>
+        <div class="type-char">2</div>
+        <div class="type-char">{</div>
+        <div class="type-char">}</div>
+        <div class="type-char">(</div>
+        <div class="type-char">)</div>
+        <div class="type-char">→</div>
+        <div class="type-char">⊕</div>
+      </div>
+    </div>
+
+    <!-- Type scale -->
+    <h3 class="sub-header">Scale</h3>
+    <div class="type-scale">
+      <div class="type-scale-label"><span>Display</span></div>
+      <div class="type-scale-demo">
+        <span class="size-note">48px / 700</span>
+        <span style="font-size: 48px; font-weight: 700; letter-spacing: -0.02em; color: var(--signal);">origin</span>
+      </div>
+      <div class="type-scale-label"><span>H1</span></div>
+      <div class="type-scale-demo">
+        <span class="size-note">28px / 700</span>
+        <span style="font-size: 28px; font-weight: 700; letter-spacing: -0.01em; color: var(--signal);">Section Title</span>
+      </div>
+      <div class="type-scale-label"><span>H2</span></div>
+      <div class="type-scale-demo">
+        <span class="size-note">20px / 700</span>
+        <span style="font-size: 20px; font-weight: 700; color: var(--signal);">Subsection</span>
+      </div>
+      <div class="type-scale-label"><span>Body</span></div>
+      <div class="type-scale-demo">
+        <span class="size-note">14px / 400</span>
+        <span style="font-size: 14px; font-weight: 400; color: var(--signal);">Sensors auto-poll every tick — host always has fresh readings.</span>
+      </div>
+      <div class="type-scale-label"><span>Small</span></div>
+      <div class="type-scale-demo">
+        <span class="size-note">12px / 400</span>
+        <span style="font-size: 12px; font-weight: 400; color: var(--dim);">Labels, metadata, secondary information.</span>
+      </div>
+      <div class="type-scale-label"><span>Micro</span></div>
+      <div class="type-scale-demo">
+        <span class="size-note">11px / 400</span>
+        <span style="font-size: 11px; font-weight: 400; color: var(--dim-dark); letter-spacing: 0.12em; text-transform: uppercase;">Section labels, tags</span>
+      </div>
+    </div>
+
+    <!-- Weights -->
+    <h3 class="sub-header">Weights</h3>
+    <div class="type-weights">
+      <div class="type-weight-cell">
+        <div class="tw-demo" style="font-weight: 300;">Aa</div>
+        <div class="tw-name">Light — 300</div>
+      </div>
+      <div class="type-weight-cell">
+        <div class="tw-demo" style="font-weight: 400;">Aa</div>
+        <div class="tw-name">Regular — 400</div>
+      </div>
+      <div class="type-weight-cell">
+        <div class="tw-demo" style="font-weight: 500;">Aa</div>
+        <div class="tw-name">Medium — 500</div>
+      </div>
+      <div class="type-weight-cell">
+        <div class="tw-demo" style="font-weight: 700;">Aa</div>
+        <div class="tw-name">Bold — 700</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ICONOGRAPHY -->
+<section id="iconography">
+  <div class="container">
+    <div class="section-header">
+      <div class="section-label">05 — Iconography</div>
+      <h2 class="section-title">The Bot</h2>
+      <p class="section-desc">Origin's mascot is a small boxy robot with binocular eyes on stalks, always looking up — the device gazing at the host, waiting for its next instruction. Inspired by the original WALL·E Arduino project that started it all. Sharp geometry, zero border-radius, stroke-only construction.</p>
+    </div>
+
+    <!-- Hero mascot -->
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1px; background: var(--wire); margin-bottom: 48px;">
+      <div style="background: var(--panel); padding: 64px; display: flex; align-items: center; justify-content: center;">
+        <!-- Large mascot - looking up -->
+        <svg viewBox="0 0 200 220" fill="none" width="200" height="220">
+          <!-- Treads -->
+          <rect x="30" y="170" width="40" height="22" stroke="#E8E8E8" stroke-width="2" fill="none"/>
+          <rect x="130" y="170" width="40" height="22" stroke="#E8E8E8" stroke-width="2" fill="none"/>
+          <line x1="36" y1="170" x2="36" y2="192" stroke="#4A4A4A" stroke-width="1"/>
+          <line x1="44" y1="170" x2="44" y2="192" stroke="#4A4A4A" stroke-width="1"/>
+          <line x1="52" y1="170" x2="52" y2="192" stroke="#4A4A4A" stroke-width="1"/>
+          <line x1="60" y1="170" x2="60" y2="192" stroke="#4A4A4A" stroke-width="1"/>
+          <line x1="136" y1="170" x2="136" y2="192" stroke="#4A4A4A" stroke-width="1"/>
+          <line x1="144" y1="170" x2="144" y2="192" stroke="#4A4A4A" stroke-width="1"/>
+          <line x1="152" y1="170" x2="152" y2="192" stroke="#4A4A4A" stroke-width="1"/>
+          <line x1="160" y1="170" x2="160" y2="192" stroke="#4A4A4A" stroke-width="1"/>
+          <!-- Body -->
+          <rect x="40" y="108" width="120" height="64" stroke="#E8E8E8" stroke-width="2" fill="none"/>
+          <!-- Body detail lines -->
+          <line x1="40" y1="130" x2="160" y2="130" stroke="#4A4A4A" stroke-width="1"/>
+          <rect x="52" y="138" width="16" height="8" stroke="#4A4A4A" stroke-width="1" fill="none"/>
+          <rect x="76" y="138" width="8" height="8" fill="#F59E0B" opacity="0.4"/>
+          <!-- Neck -->
+          <line x1="88" y1="108" x2="88" y2="82" stroke="#E8E8E8" stroke-width="2"/>
+          <line x1="112" y1="108" x2="112" y2="82" stroke="#E8E8E8" stroke-width="2"/>
+          <!-- Head -->
+          <rect x="68" y="48" width="64" height="36" stroke="#E8E8E8" stroke-width="2" fill="none"/>
+          <!-- Eyes - binoculars looking UP -->
+          <!-- Left eye stalk -->
+          <line x1="84" y1="48" x2="80" y2="30" stroke="#E8E8E8" stroke-width="2"/>
+          <!-- Left eye housing -->
+          <rect x="70" y="14" width="20" height="18" stroke="#E8E8E8" stroke-width="2" fill="none"/>
+          <!-- Left pupil - looking up -->
+          <rect x="76" y="16" width="8" height="6" fill="#F59E0B"/>
+          <!-- Right eye stalk -->
+          <line x1="116" y1="48" x2="120" y2="30" stroke="#E8E8E8" stroke-width="2"/>
+          <!-- Right eye housing -->
+          <rect x="110" y="14" width="20" height="18" stroke="#E8E8E8" stroke-width="2" fill="none"/>
+          <!-- Right pupil - looking up -->
+          <rect x="116" y="16" width="8" height="6" fill="#F59E0B"/>
+          <!-- Arms -->
+          <line x1="40" y1="120" x2="24" y2="135" stroke="#E8E8E8" stroke-width="2"/>
+          <rect x="16" y="133" width="10" height="6" stroke="#E8E8E8" stroke-width="1.5" fill="none"/>
+          <line x1="160" y1="120" x2="176" y2="135" stroke="#E8E8E8" stroke-width="2"/>
+          <rect x="174" y="133" width="10" height="6" stroke="#E8E8E8" stroke-width="1.5" fill="none"/>
+        </svg>
+      </div>
+      <div style="background: var(--panel); padding: 48px; display: flex; flex-direction: column; justify-content: center;">
+        <div class="rule-item">
+          <div class="rule-label">Eyes</div>
+          <div class="rule-text">Binocular housings on stalks. Always looking up. Pupils are phosphor amber squares — the only accent in the character. They sit at the top of each eye housing to convey the upward gaze.</div>
+        </div>
+        <div class="rule-item">
+          <div class="rule-label">Body</div>
+          <div class="rule-text">Rectangular chassis. Visible panel lines and detail geometry. One small amber indicator light on the body. All rectangles, zero border-radius.</div>
+        </div>
+        <div class="rule-item">
+          <div class="rule-label">Treads</div>
+          <div class="rule-text">Two track units with interior tread lines. Grounded and mechanical. They establish the bot as something that moves in the physical world.</div>
+        </div>
+        <div class="rule-item">
+          <div class="rule-label">Arms</div>
+          <div class="rule-text">Simple angled lines terminating in small rectangular grippers. Resting position is slightly lowered — not waving, not posed. Neutral and ready.</div>
+        </div>
+        <div class="rule-item">
+          <div class="rule-label">The Gaze</div>
+          <div class="rule-text">The bot always looks up. It's the device looking at the host for its next action. This upward orientation is the single most important quality of the character and must be preserved in every variant.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Icon variants - bot in different states -->
+    <h3 class="sub-header">System Icon Variants</h3>
+    <p class="prose">Each system icon is the bot in a different state or context. The base character is the same — the expression and props change to communicate the concept. The upward gaze is always preserved.</p>
+
+    <div class="icon-grid">
+      <!-- Idle - basic bot looking up -->
+      <div class="icon-cell">
+        <svg viewBox="0 0 48 56" fill="none" width="40" height="47">
+          <!-- Treads -->
+          <rect x="6" y="46" width="12" height="6" stroke="#E8E8E8" stroke-width="1.5" fill="none"/>
+          <rect x="30" y="46" width="12" height="6" stroke="#E8E8E8" stroke-width="1.5" fill="none"/>
+          <!-- Body -->
+          <rect x="8" y="28" width="32" height="18" stroke="#E8E8E8" stroke-width="1.5" fill="none"/>
+          <!-- Neck -->
+          <line x1="20" y1="28" x2="20" y2="22" stroke="#E8E8E8" stroke-width="1.5"/>
+          <line x1="28" y1="28" x2="28" y2="22" stroke="#E8E8E8" stroke-width="1.5"/>
+          <!-- Head -->
+          <rect x="14" y="14" width="20" height="9" stroke="#E8E8E8" stroke-width="1.5" fill="none"/>
+          <!-- Left eye -->
+          <line x1="19" y1="14" x2="18" y2="9" stroke="#E8E8E8" stroke-width="1.5"/>
+          <rect x="13" y="3" width="8" height="7" stroke="#E8E8E8" stroke-width="1.5" fill="none"/>
+          <rect x="15" y="4" width="4" height="3" fill="#F59E0B"/>
+          <!-- Right eye -->
+          <line x1="29" y1="14" x2="30" y2="9" stroke="#E8E8E8" stroke-width="1.5"/>
+          <rect x="27" y="3" width="8" height="7" stroke="#E8E8E8" stroke-width="1.5" fill="none"/>
+          <rect x="29" y="4" width="4" height="3" fill="#F59E0B"/>
+        </svg>
+        <div class="icon-name">Idle</div>
+      </div>
+
+      <!-- Sensing - bot with signal waves from eyes -->
+      <div class="icon-cell">
+        <svg viewBox="0 0 48 56" fill="none" width="40" height="47">
+          <!-- Treads -->
+          <rect x="6" y="46" width="12" height="6" stroke="#E8E8E8" stroke-width="1.5" fill="none"/>
+          <rect x="30" y="46" width="12" height="6" stroke="#E8E8E8" stroke-width="1.5" fill="none"/>
+          <!-- Body -->
+          <rect x="8" y="28" width="32" height="18" stroke="#E8E8E8" stroke-width="1.5" fill="none"/>
+          <!-- Neck -->
+          <line x1="20" y1="28" x2="20" y2="22" stroke="#E8E8E8" stroke-width="1.5"/>
+          <line x1="28" y1="28" x2="28" y2="22" stroke="#E8E8E8" stroke-width="1.5"/>
+          <!-- Head -->
+          <rect x="14" y="14" width="20" height="9" stroke="#E8E8E8" stroke-width="1.5" fill="none"/>
+          <!-- Left eye -->
+          <line x1="19" y1="14" x2="18" y2="9" stroke="#E8E8E8" stroke-width="1.5"/>
+          <rect x="13" y="3" width="8" height="7" stroke="#E8E8E8" stroke-width="1.5" fill="none"/>
+          <rect x="15" y="4" width="4" height="3" fill="#F59E0B"/>
+          <!-- Right eye -->
+          <line x1="29" y1="14" x2="30" y2="9" stroke="#E8E8E8" stroke-width="1.5"/>
+          <rect x="27" y="3" width="8" height="7" stroke="#E8E8E8" stroke-width="1.5" fill="none"/>
+          <rect x="29" y="4" width="4" height="3" fill="#F59E0B"/>
+          <!-- Signal waves going up -->
+          <line x1="18" y1="1" x2="14" y2="-3" stroke="#F59E0B" stroke-width="1" opacity="0.6"/>
+          <line x1="24" y1="0" x2="24" y2="-4" stroke="#F59E0B" stroke-width="1" opacity="0.4"/>
+          <line x1="30" y1="1" x2="34" y2="-3" stroke="#F59E0B" stroke-width="1" opacity="0.6"/>
+        </svg>
+        <div class="icon-name">Sensing</div>
+      </div>
+
+      <!-- Moving - bot with motion lines -->
+      <div class="icon-cell">
+        <svg viewBox="0 0 48 56" fill="none" width="40" height="47">
+          <!-- Motion lines -->
+          <line x1="2" y1="36" x2="6" y2="36" stroke="#4A4A4A" stroke-width="1"/>
+          <line x1="0" y1="40" x2="6" y2="40" stroke="#4A4A4A" stroke-width="1"/>
+          <line x1="2" y1="44" x2="6" y2="44" stroke="#4A4A4A" stroke-width="1"/>
+          <!-- Treads -->
+          <rect x="8" y="46" width="12" height="6" stroke="#E8E8E8" stroke-width="1.5" fill="none"/>
+          <rect x="32" y="46" width="12" height="6" stroke="#E8E8E8" stroke-width="1.5" fill="none"/>
+          <!-- Body -->
+          <rect x="10" y="28" width="32" height="18" stroke="#E8E8E8" stroke-width="1.5" fill="none"/>
+          <!-- Neck -->
+          <line x1="22" y1="28" x2="22" y2="22" stroke="#E8E8E8" stroke-width="1.5"/>
+          <line x1="30" y1="28" x2="30" y2="22" stroke="#E8E8E8" stroke-width="1.5"/>
+          <!-- Head -->
+          <rect x="16" y="14" width="20" height="9" stroke="#E8E8E8" stroke-width="1.5" fill="none"/>
+          <!-- Left eye -->
+          <line x1="21" y1="14" x2="20" y2="9" stroke="#E8E8E8" stroke-width="1.5"/>
+          <rect x="15" y="3" width="8" height="7" stroke="#E8E8E8" stroke-width="1.5" fill="none"/>
+          <rect x="17" y="4" width="4" height="3" fill="#F59E0B"/>
+          <!-- Right eye -->
+          <line x1="31" y1="14" x2="32" y2="9" stroke="#E8E8E8" stroke-width="1.5"/>
+          <rect x="29" y="3" width="8" height="7" stroke="#E8E8E8" stroke-width="1.5" fill="none"/>
+          <rect x="31" y="4" width="4" height="3" fill="#F59E0B"/>
+        </svg>
+        <div class="icon-name">Moving</div>
+      </div>
+
+      <!-- Receiving - bot with downward arrow/signal from above -->
+      <div class="icon-cell">
+        <svg viewBox="0 0 48 60" fill="none" width="40" height="50">
+          <!-- Incoming signal from host -->
+          <line x1="24" y1="-2" x2="24" y2="6" stroke="#F59E0B" stroke-width="1.5"/>
+          <line x1="20" y1="3" x2="24" y2="7" stroke="#F59E0B" stroke-width="1"/>
+          <line x1="28" y1="3" x2="24" y2="7" stroke="#F59E0B" stroke-width="1"/>
+          <!-- Treads -->
+          <rect x="6" y="50" width="12" height="6" stroke="#E8E8E8" stroke-width="1.5" fill="none"/>
+          <rect x="30" y="50" width="12" height="6" stroke="#E8E8E8" stroke-width="1.5" fill="none"/>
+          <!-- Body -->
+          <rect x="8" y="32" width="32" height="18" stroke="#E8E8E8" stroke-width="1.5" fill="none"/>
+          <!-- Neck -->
+          <line x1="20" y1="32" x2="20" y2="26" stroke="#E8E8E8" stroke-width="1.5"/>
+          <line x1="28" y1="32" x2="28" y2="26" stroke="#E8E8E8" stroke-width="1.5"/>
+          <!-- Head -->
+          <rect x="14" y="18" width="20" height="9" stroke="#E8E8E8" stroke-width="1.5" fill="none"/>
+          <!-- Left eye - wide/alert -->
+          <line x1="19" y1="18" x2="18" y2="14" stroke="#E8E8E8" stroke-width="1.5"/>
+          <rect x="13" y="8" width="8" height="7" stroke="#F59E0B" stroke-width="1.5" fill="none"/>
+          <rect x="15" y="9" width="4" height="3" fill="#F59E0B"/>
+          <!-- Right eye - wide/alert -->
+          <line x1="29" y1="18" x2="30" y2="14" stroke="#E8E8E8" stroke-width="1.5"/>
+          <rect x="27" y="8" width="8" height="7" stroke="#F59E0B" stroke-width="1.5" fill="none"/>
+          <rect x="29" y="9" width="4" height="3" fill="#F59E0B"/>
+        </svg>
+        <div class="icon-name">Receiving</div>
+      </div>
+
+      <!-- Sending - bot with signal going up from body -->
+      <div class="icon-cell">
+        <svg viewBox="0 0 48 56" fill="none" width="40" height="47">
+          <!-- Treads -->
+          <rect x="6" y="46" width="12" height="6" stroke="#E8E8E8" stroke-width="1.5" fill="none"/>
+          <rect x="30" y="46" width="12" height="6" stroke="#E8E8E8" stroke-width="1.5" fill="none"/>
+          <!-- Body -->
+          <rect x="8" y="28" width="32" height="18" stroke="#E8E8E8" stroke-width="1.5" fill="none"/>
+          <!-- Indicator light on body - active -->
+          <rect x="34" y="32" width="4" height="4" fill="#F59E0B"/>
+          <!-- Neck -->
+          <line x1="20" y1="28" x2="20" y2="22" stroke="#E8E8E8" stroke-width="1.5"/>
+          <line x1="28" y1="28" x2="28" y2="22" stroke="#E8E8E8" stroke-width="1.5"/>
+          <!-- Head -->
+          <rect x="14" y="14" width="20" height="9" stroke="#E8E8E8" stroke-width="1.5" fill="none"/>
+          <!-- Left eye -->
+          <line x1="19" y1="14" x2="18" y2="9" stroke="#E8E8E8" stroke-width="1.5"/>
+          <rect x="13" y="3" width="8" height="7" stroke="#E8E8E8" stroke-width="1.5" fill="none"/>
+          <rect x="15" y="4" width="4" height="3" fill="#F59E0B"/>
+          <!-- Right eye -->
+          <line x1="29" y1="14" x2="30" y2="9" stroke="#E8E8E8" stroke-width="1.5"/>
+          <rect x="27" y="3" width="8" height="7" stroke="#E8E8E8" stroke-width="1.5" fill="none"/>
+          <rect x="29" y="4" width="4" height="3" fill="#F59E0B"/>
+          <!-- Upward signal from body -->
+          <line x1="36" y1="30" x2="42" y2="24" stroke="#F59E0B" stroke-width="1" opacity="0.5"/>
+          <line x1="36" y1="28" x2="44" y2="20" stroke="#F59E0B" stroke-width="1" opacity="0.3"/>
+        </svg>
+        <div class="icon-name">Sending</div>
+      </div>
+
+      <!-- Connected - bot with link/bridge above -->
+      <div class="icon-cell">
+        <svg viewBox="0 0 48 60" fill="none" width="40" height="50">
+          <!-- Connection bridge above -->
+          <rect x="14" y="0" width="20" height="6" stroke="#F59E0B" stroke-width="1" fill="none"/>
+          <line x1="24" y1="6" x2="24" y2="10" stroke="#F59E0B" stroke-width="1" stroke-dasharray="2 1"/>
+          <!-- Treads -->
+          <rect x="6" y="50" width="12" height="6" stroke="#E8E8E8" stroke-width="1.5" fill="none"/>
+          <rect x="30" y="50" width="12" height="6" stroke="#E8E8E8" stroke-width="1.5" fill="none"/>
+          <!-- Body -->
+          <rect x="8" y="32" width="32" height="18" stroke="#E8E8E8" stroke-width="1.5" fill="none"/>
+          <!-- Neck -->
+          <line x1="20" y1="32" x2="20" y2="26" stroke="#E8E8E8" stroke-width="1.5"/>
+          <line x1="28" y1="32" x2="28" y2="26" stroke="#E8E8E8" stroke-width="1.5"/>
+          <!-- Head -->
+          <rect x="14" y="18" width="20" height="9" stroke="#E8E8E8" stroke-width="1.5" fill="none"/>
+          <!-- Left eye -->
+          <line x1="19" y1="18" x2="18" y2="14" stroke="#E8E8E8" stroke-width="1.5"/>
+          <rect x="13" y="8" width="8" height="7" stroke="#E8E8E8" stroke-width="1.5" fill="none"/>
+          <rect x="15" y="9" width="4" height="3" fill="#F59E0B"/>
+          <!-- Right eye -->
+          <line x1="29" y1="18" x2="30" y2="14" stroke="#E8E8E8" stroke-width="1.5"/>
+          <rect x="27" y="8" width="8" height="7" stroke="#E8E8E8" stroke-width="1.5" fill="none"/>
+          <rect x="29" y="9" width="4" height="3" fill="#F59E0B"/>
+        </svg>
+        <div class="icon-name">Connected</div>
+      </div>
+
+      <!-- Error - bot with X eyes -->
+      <div class="icon-cell">
+        <svg viewBox="0 0 48 56" fill="none" width="40" height="47">
+          <!-- Treads -->
+          <rect x="6" y="46" width="12" height="6" stroke="#E8E8E8" stroke-width="1.5" fill="none"/>
+          <rect x="30" y="46" width="12" height="6" stroke="#E8E8E8" stroke-width="1.5" fill="none"/>
+          <!-- Body -->
+          <rect x="8" y="28" width="32" height="18" stroke="#E8E8E8" stroke-width="1.5" fill="none"/>
+          <!-- Neck -->
+          <line x1="20" y1="28" x2="20" y2="22" stroke="#E8E8E8" stroke-width="1.5"/>
+          <line x1="28" y1="28" x2="28" y2="22" stroke="#E8E8E8" stroke-width="1.5"/>
+          <!-- Head -->
+          <rect x="14" y="14" width="20" height="9" stroke="#E8E8E8" stroke-width="1.5" fill="none"/>
+          <!-- Left eye - X -->
+          <line x1="19" y1="14" x2="18" y2="9" stroke="#E8E8E8" stroke-width="1.5"/>
+          <rect x="13" y="3" width="8" height="7" stroke="#4A4A4A" stroke-width="1.5" fill="none"/>
+          <line x1="15" y1="5" x2="19" y2="8" stroke="#EF4444" stroke-width="1.5"/>
+          <line x1="19" y1="5" x2="15" y2="8" stroke="#EF4444" stroke-width="1.5"/>
+          <!-- Right eye - X -->
+          <line x1="29" y1="14" x2="30" y2="9" stroke="#E8E8E8" stroke-width="1.5"/>
+          <rect x="27" y="3" width="8" height="7" stroke="#4A4A4A" stroke-width="1.5" fill="none"/>
+          <line x1="29" y1="5" x2="33" y2="8" stroke="#EF4444" stroke-width="1.5"/>
+          <line x1="33" y1="5" x2="29" y2="8" stroke="#EF4444" stroke-width="1.5"/>
+        </svg>
+        <div class="icon-name">Error</div>
+      </div>
+
+      <!-- Sleeping - bot with dim/closed eyes, dashes -->
+      <div class="icon-cell">
+        <svg viewBox="0 0 48 56" fill="none" width="40" height="47">
+          <!-- Treads -->
+          <rect x="6" y="46" width="12" height="6" stroke="#E8E8E8" stroke-width="1.5" fill="none"/>
+          <rect x="30" y="46" width="12" height="6" stroke="#E8E8E8" stroke-width="1.5" fill="none"/>
+          <!-- Body -->
+          <rect x="8" y="28" width="32" height="18" stroke="#E8E8E8" stroke-width="1.5" fill="none"/>
+          <!-- Neck -->
+          <line x1="20" y1="28" x2="20" y2="22" stroke="#E8E8E8" stroke-width="1.5"/>
+          <line x1="28" y1="28" x2="28" y2="22" stroke="#E8E8E8" stroke-width="1.5"/>
+          <!-- Head - slightly drooped -->
+          <rect x="14" y="15" width="20" height="9" stroke="#E8E8E8" stroke-width="1.5" fill="none"/>
+          <!-- Left eye - closed/line -->
+          <line x1="19" y1="15" x2="18" y2="10" stroke="#E8E8E8" stroke-width="1.5"/>
+          <rect x="13" y="4" width="8" height="7" stroke="#4A4A4A" stroke-width="1.5" fill="none"/>
+          <line x1="15" y1="7" x2="19" y2="7" stroke="#4A4A4A" stroke-width="1.5"/>
+          <!-- Right eye - closed/line -->
+          <line x1="29" y1="15" x2="30" y2="10" stroke="#E8E8E8" stroke-width="1.5"/>
+          <rect x="27" y="4" width="8" height="7" stroke="#4A4A4A" stroke-width="1.5" fill="none"/>
+          <line x1="29" y1="7" x2="33" y2="7" stroke="#4A4A4A" stroke-width="1.5"/>
+          <!-- Zzz -->
+          <text x="38" y="10" font-family="JetBrains Mono" font-size="7" fill="#4A4A4A">z</text>
+          <text x="42" y="5" font-family="JetBrains Mono" font-size="6" fill="#4A4A4A">z</text>
+        </svg>
+        <div class="icon-name">Sleeping</div>
+      </div>
+
+      <!-- Thinking - bot with dots above -->
+      <div class="icon-cell">
+        <svg viewBox="0 0 48 60" fill="none" width="40" height="50">
+          <!-- Thinking dots -->
+          <rect x="20" y="1" width="2" height="2" fill="#F59E0B" opacity="0.4"/>
+          <rect x="25" y="0" width="2" height="2" fill="#F59E0B" opacity="0.6"/>
+          <rect x="30" y="1" width="2" height="2" fill="#F59E0B" opacity="0.8"/>
+          <!-- Treads -->
+          <rect x="6" y="50" width="12" height="6" stroke="#E8E8E8" stroke-width="1.5" fill="none"/>
+          <rect x="30" y="50" width="12" height="6" stroke="#E8E8E8" stroke-width="1.5" fill="none"/>
+          <!-- Body -->
+          <rect x="8" y="32" width="32" height="18" stroke="#E8E8E8" stroke-width="1.5" fill="none"/>
+          <!-- Neck -->
+          <line x1="20" y1="32" x2="20" y2="26" stroke="#E8E8E8" stroke-width="1.5"/>
+          <line x1="28" y1="32" x2="28" y2="26" stroke="#E8E8E8" stroke-width="1.5"/>
+          <!-- Head -->
+          <rect x="14" y="18" width="20" height="9" stroke="#E8E8E8" stroke-width="1.5" fill="none"/>
+          <!-- Left eye -->
+          <line x1="19" y1="18" x2="18" y2="13" stroke="#E8E8E8" stroke-width="1.5"/>
+          <rect x="13" y="7" width="8" height="7" stroke="#E8E8E8" stroke-width="1.5" fill="none"/>
+          <rect x="15" y="8" width="4" height="3" fill="#F59E0B"/>
+          <!-- Right eye -->
+          <line x1="29" y1="18" x2="30" y2="13" stroke="#E8E8E8" stroke-width="1.5"/>
+          <rect x="27" y="7" width="8" height="7" stroke="#E8E8E8" stroke-width="1.5" fill="none"/>
+          <rect x="29" y="8" width="4" height="3" fill="#F59E0B"/>
+        </svg>
+        <div class="icon-name">Thinking</div>
+      </div>
+
+      <!-- Carrying - bot with arms up holding a box -->
+      <div class="icon-cell">
+        <svg viewBox="0 0 48 60" fill="none" width="40" height="50">
+          <!-- Payload -->
+          <rect x="12" y="0" width="24" height="12" stroke="#F59E0B" stroke-width="1.5" fill="none"/>
+          <line x1="24" y1="0" x2="24" y2="12" stroke="#F59E0B" stroke-width="1" opacity="0.4"/>
+          <line x1="12" y1="6" x2="36" y2="6" stroke="#F59E0B" stroke-width="1" opacity="0.4"/>
+          <!-- Arms up holding box -->
+          <line x1="8" y1="34" x2="4" y2="16" stroke="#E8E8E8" stroke-width="1.5"/>
+          <line x1="4" y1="16" x2="14" y2="12" stroke="#E8E8E8" stroke-width="1.5"/>
+          <line x1="40" y1="34" x2="44" y2="16" stroke="#E8E8E8" stroke-width="1.5"/>
+          <line x1="44" y1="16" x2="34" y2="12" stroke="#E8E8E8" stroke-width="1.5"/>
+          <!-- Treads -->
+          <rect x="6" y="50" width="12" height="6" stroke="#E8E8E8" stroke-width="1.5" fill="none"/>
+          <rect x="30" y="50" width="12" height="6" stroke="#E8E8E8" stroke-width="1.5" fill="none"/>
+          <!-- Body -->
+          <rect x="8" y="32" width="32" height="18" stroke="#E8E8E8" stroke-width="1.5" fill="none"/>
+          <!-- Neck -->
+          <line x1="20" y1="32" x2="20" y2="28" stroke="#E8E8E8" stroke-width="1.5"/>
+          <line x1="28" y1="32" x2="28" y2="28" stroke="#E8E8E8" stroke-width="1.5"/>
+          <!-- Head - small, under the payload -->
+          <rect x="16" y="21" width="16" height="8" stroke="#E8E8E8" stroke-width="1.5" fill="none"/>
+          <!-- Eyes - looking up at payload -->
+          <line x1="21" y1="21" x2="20" y2="18" stroke="#E8E8E8" stroke-width="1.5"/>
+          <rect x="16" y="14" width="6" height="5" stroke="#E8E8E8" stroke-width="1.5" fill="none"/>
+          <rect x="17" y="14.5" width="3" height="2" fill="#F59E0B"/>
+          <line x1="27" y1="21" x2="28" y2="18" stroke="#E8E8E8" stroke-width="1.5"/>
+          <rect x="26" y="14" width="6" height="5" stroke="#E8E8E8" stroke-width="1.5" fill="none"/>
+          <rect x="27" y="14.5" width="3" height="2" fill="#F59E0B"/>
+        </svg>
+        <div class="icon-name">Carrying</div>
+      </div>
+    </div>
+
+    <!-- Icon rules -->
+    <div class="icon-rules">
+      <div class="icon-rule-item">
+        <div class="iri-title">The Gaze</div>
+        <div class="iri-text">The bot always looks up. Pupils sit at the top of each eye housing. This is non-negotiable — it's the defining trait of the character.</div>
+      </div>
+      <div class="icon-rule-item">
+        <div class="iri-title">Expression via Eyes</div>
+        <div class="iri-text">State changes through eye content: amber squares = active, lines = sleeping, X marks = error, wide housings = alert. The body stays consistent.</div>
+      </div>
+      <div class="icon-rule-item">
+        <div class="iri-title">Geometry</div>
+        <div class="iri-text">All rectangles, zero border-radius. Signal (#E8E8E8) for structure, Phosphor (#F59E0B) for the pupils and one accent element per icon. No fills on the body — stroke only.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- USAGE -->
+<section id="usage">
+  <div class="container">
+    <div class="section-header">
+      <div class="section-label">06 — Usage</div>
+      <h2 class="section-title">Do & Don't</h2>
+      <p class="section-desc">Consistency is precision. These rules keep Origin looking like Origin.</p>
+    </div>
+
+    <div class="do-dont-grid">
+      <div class="do-dont-cell">
+        <div class="dd-label do">✓ DO</div>
+        <div class="dd-item">Use the mark on dark backgrounds (#0A0A0A or #111111)</div>
+        <div class="dd-item">Keep clear space of at least 1× the center square width</div>
+        <div class="dd-item">Use phosphor amber as a single restrained accent</div>
+        <div class="dd-item">Render the center point as a square — always</div>
+        <div class="dd-item">Use JetBrains Mono exclusively across all materials</div>
+        <div class="dd-item">Use flat color — surface depth via elevation only</div>
+        <div class="dd-example">
+          <svg viewBox="0 0 180 48" fill="none" width="180" height="48">
+            <line x1="24" y1="4" x2="24" y2="18" stroke="#F59E0B" stroke-width="1.5"/>
+            <line x1="24" y1="30" x2="24" y2="44" stroke="#F59E0B" stroke-width="1.5"/>
+            <line x1="4" y1="24" x2="18" y2="24" stroke="#F59E0B" stroke-width="1.5"/>
+            <line x1="30" y1="24" x2="44" y2="24" stroke="#F59E0B" stroke-width="1.5"/>
+            <rect x="21" y="21" width="6" height="6" fill="#F59E0B"/>
+            <text x="56" y="28" font-family="JetBrains Mono, monospace" font-size="18" font-weight="700" fill="#E8E8E8">origin</text>
+          </svg>
+        </div>
+      </div>
+      <div class="do-dont-cell">
+        <div class="dd-label dont">✗ DON'T</div>
+        <div class="dd-item">Place the mark on light or white backgrounds</div>
+        <div class="dd-item">Use rounded corners on the center point or any element</div>
+        <div class="dd-item">Apply gradients, shadows, or glows to the mark</div>
+        <div class="dd-item">Rotate, skew, or distort the crosshair</div>
+        <div class="dd-item">Mix in a second typeface alongside JetBrains Mono</div>
+        <div class="dd-item">Use amber as a large fill — it's an accent, not a surface</div>
+        <div class="dd-item">Separate the crosshair from the center point</div>
+        <div class="dd-example" style="background: #FFFFFF; border-color: #CCCCCC;">
+          <svg viewBox="0 0 180 48" fill="none" width="180" height="48">
+            <line x1="24" y1="4" x2="24" y2="18" stroke="#F59E0B" stroke-width="1.5"/>
+            <line x1="24" y1="30" x2="24" y2="44" stroke="#F59E0B" stroke-width="1.5"/>
+            <line x1="4" y1="24" x2="18" y2="24" stroke="#F59E0B" stroke-width="1.5"/>
+            <line x1="30" y1="24" x2="44" y2="24" stroke="#F59E0B" stroke-width="1.5"/>
+            <rect x="21" y="21" width="6" height="6" fill="#F59E0B"/>
+            <text x="56" y="28" font-family="JetBrains Mono, monospace" font-size="18" font-weight="700" fill="#333333">origin</text>
+            <line x1="0" y1="0" x2="180" y2="48" stroke="#EF4444" stroke-width="1.5"/>
+          </svg>
+        </div>
+      </div>
+    </div>
+
+    <!-- Background usage -->
+    <h3 class="sub-header">Approved Backgrounds</h3>
+    <div class="bg-grid">
+      <div class="bg-cell" style="background: #0A0A0A;">
+        <svg viewBox="0 0 48 48" fill="none" width="48" height="48">
+          <line x1="24" y1="4" x2="24" y2="18" stroke="#F59E0B" stroke-width="1.5"/>
+          <line x1="24" y1="30" x2="24" y2="44" stroke="#F59E0B" stroke-width="1.5"/>
+          <line x1="4" y1="24" x2="18" y2="24" stroke="#F59E0B" stroke-width="1.5"/>
+          <line x1="30" y1="24" x2="44" y2="24" stroke="#F59E0B" stroke-width="1.5"/>
+          <rect x="21" y="21" width="6" height="6" fill="#F59E0B"/>
+        </svg>
+        <div class="bg-name" style="color: var(--dim);">Void — #0A0A0A</div>
+      </div>
+      <div class="bg-cell" style="background: #111111;">
+        <svg viewBox="0 0 48 48" fill="none" width="48" height="48">
+          <line x1="24" y1="4" x2="24" y2="18" stroke="#F59E0B" stroke-width="1.5"/>
+          <line x1="24" y1="30" x2="24" y2="44" stroke="#F59E0B" stroke-width="1.5"/>
+          <line x1="4" y1="24" x2="18" y2="24" stroke="#F59E0B" stroke-width="1.5"/>
+          <line x1="30" y1="24" x2="44" y2="24" stroke="#F59E0B" stroke-width="1.5"/>
+          <rect x="21" y="21" width="6" height="6" fill="#F59E0B"/>
+        </svg>
+        <div class="bg-name" style="color: var(--dim);">Panel — #111111</div>
+      </div>
+      <div class="bg-cell" style="background: #161616;">
+        <svg viewBox="0 0 48 48" fill="none" width="48" height="48">
+          <line x1="24" y1="4" x2="24" y2="18" stroke="#F59E0B" stroke-width="1.5"/>
+          <line x1="24" y1="30" x2="24" y2="44" stroke="#F59E0B" stroke-width="1.5"/>
+          <line x1="4" y1="24" x2="18" y2="24" stroke="#F59E0B" stroke-width="1.5"/>
+          <line x1="30" y1="24" x2="44" y2="24" stroke="#F59E0B" stroke-width="1.5"/>
+          <rect x="21" y="21" width="6" height="6" fill="#F59E0B"/>
+        </svg>
+        <div class="bg-name" style="color: var(--dim);">Panel Raised — #161616</div>
+      </div>
+    </div>
+
+    <!-- Motion -->
+    <h3 class="sub-header">Motion</h3>
+    <p class="prose">Motion is minimal and purposeful. No bounce, no elastic overshoot. Transitions are fast and precise — consistent with the coordinate-system metaphor. Things move to where they should be, immediately.</p>
+    <div class="motion-grid">
+      <div class="motion-cell">
+        <div class="mc-title">Duration</div>
+        <div class="mc-value">200ms</div>
+        <div class="mc-code">Micro-interactions, hovers</div>
+      </div>
+      <div class="motion-cell">
+        <div class="mc-title">Duration</div>
+        <div class="mc-value">300ms</div>
+        <div class="mc-code">Panel transitions, reveals</div>
+      </div>
+      <div class="motion-cell">
+        <div class="mc-title">Easing</div>
+        <div class="mc-value">cubic-bezier</div>
+        <div class="mc-code">(0.16, 1, 0.3, 1)</div>
+      </div>
+    </div>
+    <div class="motion-demo">
+      <div class="motion-box"></div>
+      <div class="motion-box b2"></div>
+      <div class="motion-box b3"></div>
+      <span style="font-size: 11px; color: var(--dim-dark); margin-left: 16px;">← hover to preview</span>
+    </div>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <div class="f-brand"><span>origin</span></div>
+  <div class="f-copy">Brand Guidelines v1.0 — The zero point between hardware and code.</div>
+</footer>
+
+</body>
+</html>
