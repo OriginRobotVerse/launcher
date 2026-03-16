@@ -17,7 +17,7 @@ public:
     }
 
     void send(const char* data) override {
-        // Flush RX buffer before transmitting (half-duplex)
+        // Half-duplex: flush RX buffer before transmitting
         while (serial.available()) serial.read();
         serial.println(data);
     }
@@ -51,7 +51,7 @@ public:
 private:
     SoftwareSerial& serial;
     long baudRate;
-    char buf[128];
+    char buf[512];  // Sized for JSON messages
     int bufLen;
     bool lineReady;
 };

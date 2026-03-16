@@ -4,20 +4,62 @@
 #include <Arduino.h>
 #include "transport.h"
 
+// --- Compile-time limits ---
+
+#ifndef ORIGIN_MAX_SENSORS
 #define ORIGIN_MAX_SENSORS  8
+#endif
+
+#ifndef ORIGIN_MAX_CHIPS
 #define ORIGIN_MAX_CHIPS    8
+#endif
+
+#ifndef ORIGIN_MAX_ACTIONS
 #define ORIGIN_MAX_ACTIONS  16
-#define ORIGIN_MAX_STATE    16
+#endif
 
-// --- State: unified key/value store for action params and sensor data ---
+#ifndef ORIGIN_MAX_READINGS
+#define ORIGIN_MAX_READINGS 16
+#endif
 
-struct State {
+#ifndef ORIGIN_MAX_PARAMS
+#define ORIGIN_MAX_PARAMS   16
+#endif
+
+#ifndef ORIGIN_MAX_STATE_SCHEMA
+#define ORIGIN_MAX_STATE_SCHEMA 16
+#endif
+
+#ifndef ORIGIN_MAX_PINS
+#define ORIGIN_MAX_PINS     8
+#endif
+
+// JSON buffer sizes
+#define ORIGIN_ANNOUNCE_BUF  1024
+#define ORIGIN_READINGS_BUF  512
+#define ORIGIN_ACTION_BUF    256
+
+// Protocol version
+#define ORIGIN_PROTOCOL_VERSION "0.2"
+
+// --- State types for schema ---
+
+enum OriginStateType {
+    ORIGIN_FLOAT,
+    ORIGIN_INT,
+    ORIGIN_BOOL,
+    ORIGIN_STRING
+};
+
+// --- Readings: sensor data flowing UP to the host ---
+
+struct Readings {
     struct Entry {
         char key[32];
         float value;
     };
 
-    Entry entries[ORIGIN_MAX_STATE];
+    Entry entries[ORIGIN_MAX_READINGS];
     int count = 0;
 
     void clear() { count = 0; }
@@ -29,7 +71,45 @@ struct State {
                 return;
             }
         }
-        if (count < ORIGIN_MAX_STATE) {
+        if (count < ORIGIN_MAX_READINGS) {
+            strncpy(entries[count].key, key, 31);
+            entries[count].key[31] = '\0';
+            entries[count].value = value;
+            count++;
+        }
+    }
+
+    float get(const char* key, float defaultVal = 0) const {
+        for (int i = 0; i < count; i++) {
+            if (strcmp(entries[i].key, key) == 0) {
+                return entries[i].value;
+            }
+        }
+        return defaultVal;
+    }
+};
+
+// --- Params: action parameters flowing DOWN from the host ---
+
+struct Params {
+    struct Entry {
+        char key[32];
+        float value;
+    };
+
+    Entry entries[ORIGIN_MAX_PARAMS];
+    int count = 0;
+
+    void clear() { count = 0; }
+
+    void set(const char* key, float value) {
+        for (int i = 0; i < count; i++) {
+            if (strcmp(entries[i].key, key) == 0) {
+                entries[i].value = value;
+                return;
+            }
+        }
+        if (count < ORIGIN_MAX_PARAMS) {
             strncpy(entries[count].key, key, 31);
             entries[count].key[31] = '\0';
             entries[count].value = value;
@@ -49,7 +129,8 @@ struct State {
 
 // --- Function types ---
 
-typedef void (*ActionFn)(State& state);
+typedef void (*SensorReadFn)(Readings& readings);
+typedef void (*ActionFn)(Params params);
 
 // --- Origin core ---
 
@@ -57,30 +138,74 @@ class Origin {
 public:
     Origin();
 
-    void registerSensor(const char* name);
-    void registerChip(const char* name);
+    // Device identity
+    void setDeviceId(const char* id);
+
+    // Hardware registration
+    void registerSensor(const char* name, int* pins, int pinCount, SensorReadFn readFn);
+    void registerChip(const char* name, int* pins, int pinCount);
     void registerAction(const char* name, ActionFn fn);
+
+    // State schema definition
+    void defineState(const char* key, OriginStateType type);
+
+    // Transport
     void setTransport(Transport* transport);
 
-    // Read a complete line from transport. Returns length, 0 if nothing ready.
-    int readLine(char* buf, int maxLen);
+    // Handshake: sends announce, waits for ack, retries indefinitely
+    bool handshake();
 
-    // Run a named action. Returns true if found.
-    bool runAction(const char* name, State& state);
+    // Main loop — call this in loop(). Gated behind handshakeComplete.
+    void tick();
 
-    // Send current state as JSON via transport.
-    void sendCurrentState(const State& state);
+    // Access current readings
+    const Readings& getReadings() const;
 
-    // Send raw message via transport.
-    void send(const char* msg);
+    // Get current action name
+    const char* getCurrentAction() const;
 
 private:
-    const char* sensors[ORIGIN_MAX_SENSORS];
+    // Announce/ack
+    void sendAnnounce();
+    bool waitForAck(unsigned long timeoutMs);
+
+    // Tick internals
+    void pollSensors();
+    void sendReadings();
+    bool receiveAction();
+    void executeCurrentAction();
+
+    // JSON helpers
+    void appendJsonString(char* buf, int& pos, int maxLen, const char* str);
+    void appendJsonFloat(char* buf, int& pos, int maxLen, float value);
+    void appendJsonInt(char* buf, int& pos, int maxLen, int value);
+
+    // Read a complete line from transport
+    int readLine(char* buf, int maxLen);
+
+    // Device identity
+    const char* deviceId;
+
+    // Sensors
+    struct SensorEntry {
+        const char* name;
+        int* pins;
+        int pinCount;
+        SensorReadFn readFn;
+    };
+    SensorEntry sensors[ORIGIN_MAX_SENSORS];
     int sensorCount;
 
-    const char* chips[ORIGIN_MAX_CHIPS];
+    // Chips
+    struct ChipEntry {
+        const char* name;
+        int* pins;
+        int pinCount;
+    };
+    ChipEntry chips[ORIGIN_MAX_CHIPS];
     int chipCount;
 
+    // Actions
     struct ActionEntry {
         const char* name;
         ActionFn fn;
@@ -88,7 +213,24 @@ private:
     ActionEntry actions[ORIGIN_MAX_ACTIONS];
     int actionCount;
 
+    // State schema
+    struct StateSchemaEntry {
+        const char* key;
+        OriginStateType type;
+    };
+    StateSchemaEntry stateSchema[ORIGIN_MAX_STATE_SCHEMA];
+    int stateSchemaCount;
+
+    // Current state
+    Readings latestReadings;
+    char currentAction[64];
+    Params currentParams;
+
+    // Transport
     Transport* transport;
+
+    // Handshake state
+    bool handshakeComplete;
 };
 
 #endif

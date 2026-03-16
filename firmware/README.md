@@ -1,180 +1,114 @@
-# Origin Firmware SDK
+# Origin Firmware SDK (v0.2)
 
-Firmware SDK for Arduino that splits hardware control from application logic. Register sensors, chips, and actions on the Arduino, then control everything from a connected host over Bluetooth (or any transport).
+C++ library for Arduino that registers hardware, communicates with the Origin server via JSON wire protocol, and executes actions received from client applications.
 
-## Architecture
+## Installation
 
+Copy or symlink into your Arduino libraries folder:
+
+```bash
+ln -s /path/to/origin/firmware ~/Arduino/libraries/Origin
 ```
-Host (Python/TS)  ←──BT serial──→  Arduino (Origin SDK)
-     sends commands                  runs actions, returns state
-```
 
-Origin uses a **request/response** model over a half-duplex Bluetooth link. The host sends a command, the Arduino executes it and replies with the current state as JSON.
+No external dependencies. v0.2 does not use ArduinoJson -- JSON serialization is built in using `dtostrf` (AVR-safe, no `%f` dependency).
 
-### Core Components
-
-| File | Purpose |
-|------|---------|
-| `origin.h` | `Origin` class and `State` struct |
-| `origin.cpp` | Implementation |
-| `transport.h` | Abstract `Transport` interface |
-| `transports/bluetooth_transport.h` | HC-05 Bluetooth transport via SoftwareSerial |
-
-### State
-
-`State` is a unified key/value store (string keys, float values) shared between the Arduino and the host. Both sides can read and write it.
-
-- Actions read from state (e.g. `speed`, `angle`) and write back results (e.g. `distance`, `motion`)
-- The host can update state before calling an action (e.g. `set speed 150` then `moveFwd`)
-- Every response includes the full state as JSON
+## Quick Start
 
 ```cpp
-State state;
-state.set("speed", 200);
-float s = state.get("speed", 0);  // 200
-```
+#include <SoftwareSerial.h>
+#include "origin.h"
+#include "transports/bluetooth_transport.h"
 
-### Origin API
-
-```cpp
+SoftwareSerial BTserial(A4, A5);  // Must be in .ino file
 Origin origin;
 
-// Register hardware (names only — for introspection)
-origin.registerSensor("UltrasonicSensor");
-origin.registerChip("H1Bridge");
+int tempPins[] = {A0};
 
-// Register actions — functions that take State& and do hardware work
-origin.registerAction("moveFwd", moveFwd);
+void readTemp(Readings& readings) {
+    readings.set("temperature", analogRead(A0) * 0.48828125);
+}
 
-// Set transport (Bluetooth, Serial, etc.)
-origin.setTransport(new BluetoothTransport(BTserial, 9600));
+void fanOn(Params params) {
+    analogWrite(9, (int)params.get("speed", 255));
+}
 
-// In loop():
-int len = origin.readLine(buf, sizeof(buf));  // non-blocking line read
-origin.runAction(buf, state);                  // execute by name
-origin.sendCurrentState(state);                // send state JSON via transport
-origin.send("OK\n");                           // send raw message
+void fanOff(Params params) {
+    analogWrite(9, 0);
+}
+
+void setup() {
+    origin.setDeviceId("weather-station");
+    origin.setTransport(new BluetoothTransport(BTserial, 9600));
+    origin.registerSensor("thermistor", tempPins, 1, readTemp);
+    origin.registerAction("fanOn", fanOn);
+    origin.registerAction("fanOff", fanOff);
+    origin.defineState("temperature", ORIGIN_FLOAT);
+    origin.handshake();  // Blocks until server sends ack
+}
+
+void loop() {
+    origin.tick();
+}
 ```
 
-### Transport Interface
+## API
 
-Any transport implements four methods:
+| Method | Description |
+|--------|-------------|
+| `setDeviceId(id)` | Set the device identifier (used in API routes) |
+| `setTransport(transport)` | Set communication transport (calls `begin()`) |
+| `registerSensor(name, pins, pinCount, readFn)` | Register a sensor with auto-poll read function |
+| `registerChip(name, pins, pinCount)` | Register a hardware chip (motor driver, etc.) |
+| `registerAction(name, fn)` | Register a named action the server can trigger |
+| `defineState(key, type)` | Define a state schema entry (ORIGIN_FLOAT/INT/BOOL/STRING) |
+| `handshake()` | Send announce, wait for ack (blocks, retries indefinitely) |
+| `tick()` | Run one cycle: poll sensors, send readings, receive action, execute |
 
-```cpp
-class Transport {
-    virtual void begin() = 0;
-    virtual void send(const char* data) = 0;
-    virtual String receive() = 0;
-    virtual bool available() = 0;
-};
-```
+## Wire Protocol (v0.2)
 
-**BluetoothTransport** handles HC-05 half-duplex correctly:
-- Accumulates characters across `loop()` iterations (9600 baud is slow)
-- Only returns complete lines (waits for `\n`)
-- Flushes RX buffer before every transmit
+JSON over newline-delimited text:
 
-## Bluetooth Protocol
+**Firmware sends:**
+- `{"type":"announce","id":"...","version":"0.2","sensors":[...],"chips":[...],"actions":[...],"state":[...]}`
+- `{"type":"readings","data":{"distance":24.5}}`
 
-Plain text over serial, newline-delimited. No JSON needed for commands — just the action name or a built-in command.
+**Firmware receives:**
+- `{"type":"ack"}`
+- `{"type":"action","name":"moveFwd","params":{"speed":200}}`
 
-### Commands
+## Data Types
 
-| Command | Example | Description |
-|---------|---------|-------------|
-| `<action>` | `moveFwd\n` | Run a registered action |
-| `state` | `state\n` | Get current state (refreshes sensor readings) |
-| `set <k> <v> [...]` | `set speed 150 angle 45\n` | Update one or more state values |
+- `Readings` -- sensor data flowing up (key-value, string keys, float values)
+- `Params` -- action parameters flowing down (key-value, string keys, float values)
+- `SensorReadFn` -- `void fn(Readings& readings)`
+- `ActionFn` -- `void fn(Params params)`
 
-### Responses
+## Transports
 
-Every successful command returns the full state as JSON:
+- `SerialTransport(baudRate)` -- USB Serial (development)
+- `BluetoothTransport(softwareSerial, baudRate)` -- HC-05/06 via SoftwareSerial
 
-```
-{"speed":200.0,"distance":12.3,"angle":90.0,"motion":1.0}
-```
+Both use line-buffered accumulation. BluetoothTransport flushes RX before TX (half-duplex).
 
-Errors return a plain text message:
+**SoftwareSerial must be declared in the .ino file** to avoid static initialization order issues.
 
-```
-ERR: unknown action
-ERR: usage set <key> <val> ...
-```
+## Compile-Time Limits
 
-### State Fields (toy-car example)
+Override before including `origin.h`:
 
-| Key | Type | Values |
-|-----|------|--------|
-| `speed` | float | 0–255 (PWM duty cycle) |
-| `distance` | float | cm from ultrasonic sensor, -1 if no echo |
-| `angle` | float | degrees for turn actions |
-| `motion` | float | 0=stopped, 1=fwd, 2=bkwd, 3=right, 4=left |
+| Constant | Default |
+|----------|---------|
+| `ORIGIN_MAX_SENSORS` | 8 |
+| `ORIGIN_MAX_CHIPS` | 8 |
+| `ORIGIN_MAX_ACTIONS` | 16 |
+| `ORIGIN_MAX_READINGS` | 16 |
+| `ORIGIN_MAX_PARAMS` | 16 |
+| `ORIGIN_MAX_STATE_SCHEMA` | 16 |
 
-## Hardware Setup (HC-05 Bluetooth)
+JSON buffers: announce=1024, readings=512, actions=256 bytes.
 
-| Connection | Pin |
-|------------|-----|
-| HC-05 TX → Arduino RX | A4 |
-| HC-05 RX → Arduino TX | A5 |
-| Baud rate | 9600 |
+## Example
 
-**Critical:** `SoftwareSerial` must be declared in the `.ino` file, not in a library `.cpp`/`.h` file. The Arduino build system does not guarantee static initialization order across translation units. Declaring it in a library file causes silent failure.
+See `examples/toy-car/` for a complete reference with ultrasonic sensor, H-bridge motors, and five actions.
 
-```cpp
-// In your .ino file — NOT in a library
-SoftwareSerial BTserial(A4, A5);
-```
-
-## Example: Toy Car
-
-See `examples/toy-car/` for a complete example with:
-- L298N dual H-bridge motor control with staggered startup
-- HC-SR04 ultrasonic distance sensor
-- 5 actions: `moveFwd`, `moveBkwd`, `moveRight`, `moveLeft`, `stop`
-- State tracking for speed, distance, angle, and motion direction
-
-### Pin Map
-
-| Function | Pin | Timer |
-|----------|-----|-------|
-| ENA (left speed) | 11 | Timer2 |
-| IN1 (left fwd) | 8 | — |
-| IN2 (left bwd) | 4 | — |
-| ENB (right speed) | 6 | Timer0 |
-| IN3 (right fwd) | 7 | — |
-| IN4 (right bwd) | 10 | Timer1 |
-| Ultrasonic TRIG | A1 | — |
-| Ultrasonic ECHO | A0 | — |
-| BT RX | A4 | — |
-| BT TX | A5 | — |
-
-### Quick Start
-
-```python
-import serial
-import time
-
-bt = serial.Serial('/dev/tty.HC-05', 9600, timeout=1)
-time.sleep(2)
-
-bt.write(b'set speed 180\n')
-print(bt.readline())  # state JSON
-
-bt.write(b'moveFwd\n')
-print(bt.readline())  # {"speed":180.0,"distance":23.4,...,"motion":1.0}
-
-bt.write(b'state\n')
-print(bt.readline())  # fresh state with updated distance
-
-bt.write(b'stop\n')
-print(bt.readline())  # {"speed":0.0,...,"motion":0.0}
-```
-
-## Half-Duplex Constraints
-
-HC-05 over SoftwareSerial is half-duplex. The firmware handles this, but the host must also follow the rules:
-
-1. **Send one command at a time** — wait for the response before sending the next
-2. **Line-delimited** — every command must end with `\n`
-3. **Filter echoes** — HC-05 may echo back what it receives; ignore lines that match what you sent
-4. **macOS quirk** — BT serial only works on the first connection after a system restart; subsequent connections fail silently. Use Windows to rule out OS issues.
+Full documentation: `docs/guides/writing-firmware.md`
