@@ -1,15 +1,26 @@
 #include "origin.h"
+#include <stdlib.h>
+#include <string.h>
 
 Origin::Origin()
-    : sensorCount(0)
+    : deviceId("origin-device")
+    , sensorCount(0)
     , chipCount(0)
     , actionCount(0)
+    , stateSchemaCount(0)
     , transport(nullptr)
+    , handshakeComplete(false)
 {
     currentAction[0] = '\0';
-    currentParams.clear();
-    latestReadings.clear();
 }
+
+// --- Device identity ---
+
+void Origin::setDeviceId(const char* id) {
+    deviceId = id;
+}
+
+// --- Hardware registration ---
 
 void Origin::registerSensor(const char* name, int* pins, int pinCount, SensorReadFn readFn) {
     if (sensorCount >= ORIGIN_MAX_SENSORS) return;
@@ -35,6 +46,17 @@ void Origin::registerAction(const char* name, ActionFn fn) {
     actionCount++;
 }
 
+// --- State schema ---
+
+void Origin::defineState(const char* key, OriginStateType type) {
+    if (stateSchemaCount >= ORIGIN_MAX_STATE_SCHEMA) return;
+    stateSchema[stateSchemaCount].key = key;
+    stateSchema[stateSchemaCount].type = type;
+    stateSchemaCount++;
+}
+
+// --- Transport ---
+
 void Origin::setTransport(Transport* t) {
     transport = t;
     if (transport) {
@@ -42,85 +64,392 @@ void Origin::setTransport(Transport* t) {
     }
 }
 
+// --- JSON helpers ---
+
+void Origin::appendJsonString(char* buf, int& pos, int maxLen, const char* str) {
+    if (pos >= maxLen - 2) return;
+    buf[pos++] = '"';
+    while (*str && pos < maxLen - 2) {
+        // Escape special characters
+        if (*str == '"' || *str == '\\') {
+            if (pos < maxLen - 3) {
+                buf[pos++] = '\\';
+                buf[pos++] = *str;
+            }
+        } else {
+            buf[pos++] = *str;
+        }
+        str++;
+    }
+    buf[pos++] = '"';
+}
+
+void Origin::appendJsonFloat(char* buf, int& pos, int maxLen, float value) {
+    if (pos >= maxLen - 12) return;
+    char tmp[16];
+    dtostrf(value, 1, 2, tmp);
+    // Remove trailing zeros after decimal point, keep at least one digit
+    int len = strlen(tmp);
+    int dotPos = -1;
+    for (int i = 0; i < len; i++) {
+        if (tmp[i] == '.') { dotPos = i; break; }
+    }
+    if (dotPos >= 0) {
+        while (len > dotPos + 2 && tmp[len - 1] == '0') {
+            len--;
+        }
+        tmp[len] = '\0';
+    }
+    char* t = tmp;
+    while (*t && pos < maxLen - 1) buf[pos++] = *t++;
+}
+
+void Origin::appendJsonInt(char* buf, int& pos, int maxLen, int value) {
+    if (pos >= maxLen - 12) return;
+    char tmp[12];
+    itoa(value, tmp, 10);
+    char* t = tmp;
+    while (*t && pos < maxLen - 1) buf[pos++] = *t++;
+}
+
+// --- Announce ---
+
+void Origin::sendAnnounce() {
+    if (!transport) return;
+
+    char buf[ORIGIN_ANNOUNCE_BUF];
+    int pos = 0;
+    int maxLen = ORIGIN_ANNOUNCE_BUF - 2; // leave room for null
+
+    // {"type":"announce","id":"...","version":"0.2",
+    buf[pos++] = '{';
+
+    // type
+    appendJsonString(buf, pos, maxLen, "type");
+    buf[pos++] = ':';
+    appendJsonString(buf, pos, maxLen, "announce");
+    buf[pos++] = ',';
+
+    // id
+    appendJsonString(buf, pos, maxLen, "id");
+    buf[pos++] = ':';
+    appendJsonString(buf, pos, maxLen, deviceId);
+    buf[pos++] = ',';
+
+    // version
+    appendJsonString(buf, pos, maxLen, "version");
+    buf[pos++] = ':';
+    appendJsonString(buf, pos, maxLen, ORIGIN_PROTOCOL_VERSION);
+    buf[pos++] = ',';
+
+    // sensors array
+    appendJsonString(buf, pos, maxLen, "sensors");
+    buf[pos++] = ':';
+    buf[pos++] = '[';
+    for (int i = 0; i < sensorCount; i++) {
+        if (i > 0) buf[pos++] = ',';
+        buf[pos++] = '{';
+        appendJsonString(buf, pos, maxLen, "name");
+        buf[pos++] = ':';
+        appendJsonString(buf, pos, maxLen, sensors[i].name);
+        buf[pos++] = ',';
+        appendJsonString(buf, pos, maxLen, "pins");
+        buf[pos++] = ':';
+        buf[pos++] = '[';
+        for (int j = 0; j < sensors[i].pinCount; j++) {
+            if (j > 0) buf[pos++] = ',';
+            appendJsonInt(buf, pos, maxLen, sensors[i].pins[j]);
+        }
+        buf[pos++] = ']';
+        buf[pos++] = '}';
+    }
+    buf[pos++] = ']';
+    buf[pos++] = ',';
+
+    // chips array
+    appendJsonString(buf, pos, maxLen, "chips");
+    buf[pos++] = ':';
+    buf[pos++] = '[';
+    for (int i = 0; i < chipCount; i++) {
+        if (i > 0) buf[pos++] = ',';
+        buf[pos++] = '{';
+        appendJsonString(buf, pos, maxLen, "name");
+        buf[pos++] = ':';
+        appendJsonString(buf, pos, maxLen, chips[i].name);
+        buf[pos++] = ',';
+        appendJsonString(buf, pos, maxLen, "pins");
+        buf[pos++] = ':';
+        buf[pos++] = '[';
+        for (int j = 0; j < chips[i].pinCount; j++) {
+            if (j > 0) buf[pos++] = ',';
+            appendJsonInt(buf, pos, maxLen, chips[i].pins[j]);
+        }
+        buf[pos++] = ']';
+        buf[pos++] = '}';
+    }
+    buf[pos++] = ']';
+    buf[pos++] = ',';
+
+    // actions array
+    appendJsonString(buf, pos, maxLen, "actions");
+    buf[pos++] = ':';
+    buf[pos++] = '[';
+    for (int i = 0; i < actionCount; i++) {
+        if (i > 0) buf[pos++] = ',';
+        appendJsonString(buf, pos, maxLen, actions[i].name);
+    }
+    buf[pos++] = ']';
+    buf[pos++] = ',';
+
+    // state schema array
+    appendJsonString(buf, pos, maxLen, "state");
+    buf[pos++] = ':';
+    buf[pos++] = '[';
+    for (int i = 0; i < stateSchemaCount; i++) {
+        if (i > 0) buf[pos++] = ',';
+        buf[pos++] = '{';
+        appendJsonString(buf, pos, maxLen, "key");
+        buf[pos++] = ':';
+        appendJsonString(buf, pos, maxLen, stateSchema[i].key);
+        buf[pos++] = ',';
+        appendJsonString(buf, pos, maxLen, "type");
+        buf[pos++] = ':';
+        switch (stateSchema[i].type) {
+            case ORIGIN_FLOAT:  appendJsonString(buf, pos, maxLen, "float"); break;
+            case ORIGIN_INT:    appendJsonString(buf, pos, maxLen, "int"); break;
+            case ORIGIN_BOOL:   appendJsonString(buf, pos, maxLen, "bool"); break;
+            case ORIGIN_STRING: appendJsonString(buf, pos, maxLen, "string"); break;
+        }
+        buf[pos++] = '}';
+    }
+    buf[pos++] = ']';
+
+    buf[pos++] = '}';
+    buf[pos] = '\0';
+
+    transport->send(buf);
+}
+
+// --- Wait for ack ---
+
+bool Origin::waitForAck(unsigned long timeoutMs) {
+    if (!transport) return false;
+
+    unsigned long start = millis();
+    char buf[ORIGIN_ACTION_BUF];
+
+    while (millis() - start < timeoutMs) {
+        int len = readLine(buf, sizeof(buf));
+        if (len > 0) {
+            // Look for {"type":"ack"} — simple string search, no full parser needed
+            if (strstr(buf, "\"type\"") && strstr(buf, "\"ack\"")) {
+                return true;
+            }
+        }
+        delay(10);
+    }
+    return false;
+}
+
+// --- Handshake ---
+
+bool Origin::handshake() {
+    if (!transport) return false;
+
+    while (true) {
+        sendAnnounce();
+        if (waitForAck(5000)) {
+            handshakeComplete = true;
+            return true;
+        }
+        // Retry indefinitely — sendAnnounce again at the top of the loop
+    }
+}
+
+// --- Read line from transport ---
+
+int Origin::readLine(char* buf, int maxLen) {
+    if (!transport || !transport->available()) return 0;
+    String msg = transport->receive();
+    int len = msg.length();
+    if (len == 0) return 0;
+    if (len > maxLen - 1) len = maxLen - 1;
+    msg.toCharArray(buf, len + 1);
+    return len;
+}
+
+// --- Tick ---
+
 void Origin::tick() {
-    // 1. Poll all registered sensors → update readings
+    if (!handshakeComplete) return;
+
     pollSensors();
-
-    // 2. Send readings to host
     sendReadings();
-
-    // 3. Check for incoming action from host (non-blocking)
     receiveAction();
-
-    // 4. Execute current action (persists until overridden)
     executeCurrentAction();
 }
 
+// --- Poll sensors ---
+
 void Origin::pollSensors() {
+    latestReadings.clear();
     for (int i = 0; i < sensorCount; i++) {
-        sensors[i].readFn(latestReadings);
+        if (sensors[i].readFn) {
+            sensors[i].readFn(latestReadings);
+        }
     }
 }
+
+// --- Send readings as JSON ---
 
 void Origin::sendReadings() {
     if (!transport) return;
 
-    StaticJsonDocument<512> doc;
-    JsonObject readings = doc.createNestedObject("readings");
+    char buf[ORIGIN_READINGS_BUF];
+    int pos = 0;
+    int maxLen = ORIGIN_READINGS_BUF - 2;
+
+    // {"type":"readings","data":{...}}
+    buf[pos++] = '{';
+
+    appendJsonString(buf, pos, maxLen, "type");
+    buf[pos++] = ':';
+    appendJsonString(buf, pos, maxLen, "readings");
+    buf[pos++] = ',';
+
+    appendJsonString(buf, pos, maxLen, "data");
+    buf[pos++] = ':';
+    buf[pos++] = '{';
 
     for (int i = 0; i < latestReadings.count; i++) {
-        readings[latestReadings.entries[i].key] = latestReadings.entries[i].value;
+        if (i > 0) buf[pos++] = ',';
+        appendJsonString(buf, pos, maxLen, latestReadings.entries[i].key);
+        buf[pos++] = ':';
+        appendJsonFloat(buf, pos, maxLen, latestReadings.entries[i].value);
     }
 
-    char buffer[512];
-    serializeJson(doc, buffer, sizeof(buffer));
-    transport->send(buffer);
+    buf[pos++] = '}';
+    buf[pos++] = '}';
+    buf[pos] = '\0';
+
+    transport->send(buf);
 }
 
-void Origin::receiveAction() {
-    if (!transport || !transport->available()) return;
+// --- Receive action ---
 
-    String msg = transport->receive();
-    if (msg.length() == 0) return;
+// Helper: find the string value for a JSON key like "name":"value"
+// Returns pointer to first char of value (after opening quote), or NULL.
+// Sets endOut to the closing quote position.
+static const char* findJsonStringValue(const char* json, const char* key, const char** endOut) {
+    // Build the search pattern: "key"
+    char pattern[40];
+    pattern[0] = '"';
+    int pi = 1;
+    while (*key && pi < 36) pattern[pi++] = *key++;
+    pattern[pi++] = '"';
+    pattern[pi] = '\0';
 
-    StaticJsonDocument<256> doc;
-    DeserializationError err = deserializeJson(doc, msg);
-    if (err) return;
+    const char* found = strstr(json, pattern);
+    if (!found) return NULL;
 
-    const char* action = doc["action"];
-    if (!action) return;
+    // Skip past "key"
+    found += pi;
+    // Skip whitespace and colon
+    while (*found && (*found == ' ' || *found == ':' || *found == '\t')) found++;
+    // Expect opening quote
+    if (*found != '"') return NULL;
+    found++; // skip opening quote
 
-    strncpy(currentAction, action, sizeof(currentAction) - 1);
-    currentAction[sizeof(currentAction) - 1] = '\0';
+    // Find closing quote
+    const char* end = found;
+    while (*end && *end != '"') end++;
+    if (*end != '"') return NULL;
 
-    // Parse params
+    if (endOut) *endOut = end;
+    return found;
+}
+
+bool Origin::receiveAction() {
+    char buf[ORIGIN_ACTION_BUF];
+    int len = readLine(buf, sizeof(buf));
+    if (len <= 0) return false;
+
+    // Verify this is an action message: must contain "type":"action"
+    const char* typeEnd;
+    const char* typeVal = findJsonStringValue(buf, "type", &typeEnd);
+    if (!typeVal || strncmp(typeVal, "action", 6) != 0) return false;
+
+    // Extract action name
+    const char* nameEnd;
+    const char* nameVal = findJsonStringValue(buf, "name", &nameEnd);
+    if (!nameVal) return false;
+
+    int nameLen = nameEnd - nameVal;
+    if (nameLen > 63) nameLen = 63;
+    strncpy(currentAction, nameVal, nameLen);
+    currentAction[nameLen] = '\0';
+
+    // Extract params
     currentParams.clear();
-    JsonObject params = doc["params"];
-    if (params) {
-        for (JsonPair kv : params) {
-            if (currentParams.count >= ORIGIN_MAX_PARAMS) break;
-            strncpy(currentParams.entries[currentParams.count].key, kv.key().c_str(), 31);
-            currentParams.entries[currentParams.count].key[31] = '\0';
-            currentParams.entries[currentParams.count].value = kv.value().as<float>();
-            currentParams.count++;
+    const char* paramsKey = strstr(buf, "\"params\"");
+    if (paramsKey) {
+        const char* brace = strchr(paramsKey, '{');
+        if (brace) {
+            brace++; // skip {
+            while (*brace && *brace != '}') {
+                // Skip whitespace and commas
+                while (*brace && (*brace == ' ' || *brace == ',' || *brace == '\t')) brace++;
+                if (*brace == '}' || !*brace) break;
+
+                // Expect a quoted key
+                if (*brace != '"') break;
+                brace++; // skip opening quote
+
+                char paramKey[32];
+                int ki = 0;
+                while (*brace && *brace != '"' && ki < 31) {
+                    paramKey[ki++] = *brace++;
+                }
+                paramKey[ki] = '\0';
+                if (*brace == '"') brace++; // skip closing quote
+
+                // Skip : and whitespace
+                while (*brace && (*brace == ':' || *brace == ' ')) brace++;
+
+                // Read numeric value using atof
+                float val = atof(brace);
+                currentParams.set(paramKey, val);
+
+                // Skip past the number
+                if (*brace == '-') brace++;
+                while (*brace && ((*brace >= '0' && *brace <= '9') || *brace == '.' ||
+                       *brace == 'e' || *brace == 'E' || *brace == '+' || *brace == '-')) brace++;
+            }
         }
     }
+
+    return true;
 }
+
+// --- Execute current action ---
 
 void Origin::executeCurrentAction() {
     if (currentAction[0] == '\0') return;
 
-    ActionFn fn = findAction(currentAction);
-    if (fn) {
-        fn(currentParams);
+    for (int i = 0; i < actionCount; i++) {
+        if (strcmp(actions[i].name, currentAction) == 0) {
+            actions[i].fn(currentParams);
+            return;
+        }
     }
 }
 
-ActionFn Origin::findAction(const char* name) {
-    for (int i = 0; i < actionCount; i++) {
-        if (strcmp(actions[i].name, name) == 0) {
-            return actions[i].fn;
-        }
-    }
-    return nullptr;
+// --- Getters ---
+
+const Readings& Origin::getReadings() const {
+    return latestReadings;
+}
+
+const char* Origin::getCurrentAction() const {
+    return currentAction;
 }

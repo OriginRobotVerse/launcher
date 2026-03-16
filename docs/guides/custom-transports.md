@@ -1,42 +1,109 @@
-# Writing Custom Transports
+# Writing Custom Transports (v0.2)
 
-Origin's transport layer is pluggable. If USB Serial and Bluetooth don't fit your setup, you can write your own transport adapter for both the firmware and host sides.
+Origin's transport layer is pluggable. You can write custom transport adapters for both the firmware and server sides.
 
 ---
 
 ## The Contract
 
-Both sides agree on one thing: **newline-delimited JSON strings**. One message per line. Each side implements a simple interface for sending and receiving these lines.
+Both sides exchange **newline-delimited JSON strings**. One message per line.
+
+Messages are typed via a `"type"` field:
+- Firmware sends: `announce`, `readings`
+- Server sends: `ack`, `action`
 
 ---
 
 ## Firmware Side (C++)
 
-Implement the `Transport` abstract class:
+Implement the `Transport` abstract class from `transport.h`:
 
 ```cpp
 #include "transport.h"
 
-class Transport {
+class MyTransport : public Transport {
 public:
-    virtual ~Transport() {}
-    virtual void begin() = 0;
-    virtual void send(const char* data) = 0;
-    virtual String receive() = 0;
-    virtual bool available() = 0;
+    void begin() override {
+        // Initialize hardware
+    }
+
+    void send(const char* data) override {
+        // Send data as one line, followed by newline
+        // For half-duplex: flush RX before TX
+    }
+
+    String receive() override {
+        // Return one complete line (no newline), or "" if nothing ready
+    }
+
+    bool available() override {
+        // Return true if a complete line is buffered
+        // MUST be non-blocking
+    }
 };
 ```
 
-### Methods
+### Requirements
 
-| Method | Called by | What to do |
-|---|---|---|
-| `begin()` | `setTransport()` | Initialize your hardware (open connection, set baud rate, etc.) |
-| `send(data)` | `sendReadings()` | Send a string as one line. **Add a newline at the end.** |
-| `receive()` | `receiveAction()` | Return one complete line (without newline), or `""` if nothing available |
-| `available()` | `receiveAction()` | Return `true` if there's at least one complete line waiting |
+- `send()` must append a newline (`\n`) after the data
+- `receive()` must return a complete line without the newline
+- `receive()` returns `""` when no data is available (never blocks)
+- `available()` must be non-blocking
+- `begin()` may block (e.g., waiting for WiFi connection)
+- Use line-buffered accumulation for slow transports (9600 baud)
 
-### Example: WiFi transport (ESP32)
+### Line-Buffered Pattern
+
+For transports where data arrives byte-by-byte (serial, Bluetooth), accumulate into a buffer:
+
+```cpp
+class MyTransport : public Transport {
+    char buf[512];
+    int bufLen = 0;
+    bool lineReady = false;
+
+    bool available() override {
+        while (myHardware.available()) {
+            char c = myHardware.read();
+            if (c == '\n' || c == '\r') {
+                if (bufLen > 0) {
+                    buf[bufLen] = '\0';
+                    lineReady = true;
+                    return true;
+                }
+            } else if (bufLen < 511) {
+                buf[bufLen++] = c;
+            }
+        }
+        return lineReady;
+    }
+
+    String receive() override {
+        if (!lineReady) return "";
+        lineReady = false;
+        String msg = String(buf);
+        bufLen = 0;
+        return msg;
+    }
+};
+```
+
+### Half-Duplex Considerations
+
+If your transport is half-duplex (like HC-05 Bluetooth):
+
+1. Read first: check for incoming data before sending
+2. Flush RX before TX: discard any stale bytes in the receive buffer
+3. The tick loop naturally follows this pattern: receiveAction runs before sendReadings in the next tick
+
+```cpp
+void send(const char* data) override {
+    while (myHardware.available()) myHardware.read();  // flush RX
+    myHardware.println(data);
+}
+```
+
+### Example: WiFi Transport (ESP32)
 
 ```cpp
 #include <WiFi.h>
@@ -44,100 +111,99 @@ public:
 
 class WiFiTransport : public Transport {
 public:
-    WiFiTransport(const char* ssid, const char* password, const char* hostIP, int port)
-        : ssid(ssid), password(password), hostIP(hostIP), port(port) {}
+    WiFiTransport(const char* ssid, const char* pw, const char* host, int port)
+        : ssid(ssid), pw(pw), host(host), port(port), bufLen(0), lineReady(false) {}
 
     void begin() override {
-        WiFi.begin(ssid, password);
-        while (WiFi.status() != WL_CONNECTED) {
-            delay(500);
-        }
-        client.connect(hostIP, port);
+        WiFi.begin(ssid, pw);
+        while (WiFi.status() != WL_CONNECTED) delay(500);
+        client.connect(host, port);
     }
 
     void send(const char* data) override {
-        if (client.connected()) {
-            client.println(data);
-        }
+        if (client.connected()) client.println(data);
     }
 
     String receive() override {
-        if (client.available()) {
-            return client.readStringUntil('\n');
-        }
-        return "";
+        if (!lineReady) return "";
+        lineReady = false;
+        String msg = String(buf);
+        bufLen = 0;
+        return msg;
     }
 
     bool available() override {
-        return client.available() > 0;
+        while (client.available()) {
+            char c = client.read();
+            if (c == '\n' || c == '\r') {
+                if (bufLen > 0) {
+                    buf[bufLen] = '\0';
+                    lineReady = true;
+                    return true;
+                }
+            } else if (bufLen < 511) {
+                buf[bufLen++] = c;
+            }
+        }
+        return lineReady;
     }
 
 private:
     const char* ssid;
-    const char* password;
-    const char* hostIP;
+    const char* pw;
+    const char* host;
     int port;
     WiFiClient client;
+    char buf[512];
+    int bufLen;
+    bool lineReady;
 };
 ```
 
-Usage:
-```cpp
-origin.setTransport(new WiFiTransport("MyNetwork", "password", "192.168.1.100", 3000));
-```
-
-### Important notes for firmware transports
-
-- `send()` must append a newline. The host reads line-by-line.
-- `receive()` must return one complete line. Don't return partial data.
-- `available()` must be non-blocking. `receiveAction()` calls this to decide whether to read — if it blocks, the entire tick loop stalls.
-- `begin()` is the one place where blocking is OK (e.g., waiting for WiFi connection).
-
 ---
 
-## Host Side (TypeScript)
+## Server Side (TypeScript)
 
-Implement the `Transport` interface from `@aorigin/core`:
+Implement the `ServerTransport` interface:
 
 ```ts
-interface Transport {
-    connect(): Promise<void>;
-    send(data: string): Promise<void>;
-    receive(): Promise<string>;
-    disconnect(): Promise<void>;
+interface ServerTransport {
+    open(): Promise<void>;
+    close(): Promise<void>;
+    write(data: string): void;
+    onData(callback: (line: string) => void): void;
+    onClose(callback: () => void): void;
 }
 ```
 
-### Methods
+### Requirements
 
-| Method | Called by | What to do |
-|---|---|---|
-| `connect()` | `launcher.connect()` | Open the connection to the device |
-| `send(data)` | `client.send()` | Send a string as one line. **Add a newline.** |
-| `receive()` | `client.read()` / `client.poll()` | Return one buffered line, or `""` if nothing available |
-| `disconnect()` | `launcher.disconnect()` | Close the connection |
+- `open()` must resolve only after the connection is ready
+- `write()` sends one line (append newline)
+- `onData` callback receives complete lines (without newline)
+- `onClose` callback fires when the connection drops
+- `close()` cleans up resources
 
-### Example: WiFi transport (TCP socket)
+### Example: TCP Socket Transport
 
 ```ts
 import { createConnection, Socket } from "net";
-import type { Transport } from "@aorigin/core";
+import type { ServerTransport } from "../server/src/types.js";
 
-export class WiFiTransport implements Transport {
+export class TCPTransport implements ServerTransport {
     private socket: Socket | null = null;
-    private buffer: string[] = [];
+    private dataCallback: ((line: string) => void) | null = null;
+    private closeCallback: (() => void) | null = null;
     private partial = "";
 
-    constructor(
-        private host: string,
-        private port: number,
-    ) {}
+    constructor(private host: string, private port: number) {}
 
-    connect(): Promise<void> {
+    open(): Promise<void> {
         return new Promise((resolve, reject) => {
-            this.socket = createConnection({ host: this.host, port: this.port }, () => {
-                resolve();
-            });
+            this.socket = createConnection(
+                { host: this.host, port: this.port },
+                () => resolve(),
+            );
 
             this.socket.on("error", reject);
 
@@ -146,121 +212,76 @@ export class WiFiTransport implements Transport {
                 const lines = this.partial.split("\n");
                 this.partial = lines.pop() ?? "";
                 for (const line of lines) {
-                    if (line.trim()) {
-                        this.buffer.push(line.trim());
+                    const trimmed = line.trim();
+                    if (trimmed && this.dataCallback) {
+                        this.dataCallback(trimmed);
                     }
                 }
             });
-        });
-    }
 
-    async send(data: string): Promise<void> {
-        if (!this.socket) throw new Error("Not connected");
-        return new Promise((resolve, reject) => {
-            this.socket!.write(data + "\n", (err) => {
-                if (err) reject(err);
-                else resolve();
+            this.socket.on("close", () => {
+                this.closeCallback?.();
             });
         });
     }
 
-    async receive(): Promise<string> {
-        return this.buffer.shift() ?? "";
+    write(data: string): void {
+        this.socket?.write(data + "\n");
     }
 
-    async disconnect(): Promise<void> {
+    close(): Promise<void> {
         return new Promise((resolve) => {
             if (!this.socket) return resolve();
             this.socket.end(() => resolve());
         });
     }
+
+    onData(callback: (line: string) => void): void {
+        this.dataCallback = callback;
+    }
+
+    onClose(callback: () => void): void {
+        this.closeCallback = callback;
+    }
 }
 ```
-
-Usage:
-```ts
-const transport = new WiFiTransport("192.168.1.50", 3000);
-const launcher = new Launcher(transport);
-await launcher.connect();
-```
-
-### The buffer pattern
-
-Both built-in host transports (Serial and Bluetooth) use the same pattern:
-
-1. When data arrives from the wire, split it by newlines
-2. Push complete lines into a `string[]` buffer
-3. When `receive()` is called, shift one line off the buffer
-
-This decouples the transport's read timing from the app's read timing. The Arduino sends data much faster than the host consumes it — the buffer absorbs the difference.
-
-```ts
-// Incoming data event
-socket.on("data", (chunk) => {
-    this.buffer.push(chunk.toString().trim());
-});
-
-// Called by OriginClient.poll()
-async receive(): Promise<string> {
-    return this.buffer.shift() ?? "";
-}
-```
-
-`receive()` should **never block**. Return `""` immediately if there's nothing in the buffer. The `OriginClient.poll()` method calls `receive()` in a loop until it gets `""`, then stops.
 
 ---
 
-## Testing Your Transport
+## Testing
 
-### Step 1: Test firmware → host
+### Step 1: Firmware to server
 
-Flash your Arduino with a basic sketch that sends readings. On the host, write a simple receive loop:
+Flash your Arduino with a basic sketch. Start the server with your transport. You should see the announce/ack handshake in the server logs, followed by readings streaming.
 
-```ts
-const transport = new MyTransport(/* ... */);
-await transport.connect();
+### Step 2: Server to firmware
 
-setInterval(async () => {
-    const line = await transport.receive();
-    if (line) console.log("Received:", line);
-}, 100);
+Use curl or a client to send an action:
+
+```bash
+curl -X POST http://localhost:3000/devices/my-device/actions \
+  -H "Content-Type: application/json" \
+  -d '{"name":"stop"}'
 ```
 
-You should see JSON readings flowing in.
-
-### Step 2: Test host → firmware
-
-Open the Arduino Serial Monitor (or equivalent for your transport) and send from the host:
-
-```ts
-await transport.send('{"action":"test","params":{}}');
-```
-
-Verify the firmware receives and parses it correctly.
+Verify the firmware receives and executes it.
 
 ### Step 3: Full integration
 
-Use your transport with the Launcher:
-
-```ts
-const transport = new MyTransport(/* ... */);
-const launcher = new Launcher(transport);
-await launcher.connect();
-await launcher.run(myApp);
-```
+Write an app using the TypeScript or Python client. Verify readings flow up and actions flow down through your custom transport.
 
 ---
 
-## Transport Checklist
+## Checklist
 
-Before shipping a custom transport, verify:
+Before shipping a custom transport:
 
-- [ ] `send()` appends a newline character
-- [ ] `receive()` returns one complete line without the newline
-- [ ] `receive()` returns `""` (not null/undefined) when no data is available
-- [ ] `receive()` never blocks — returns immediately
-- [ ] `available()` (firmware) is non-blocking
-- [ ] `begin()` (firmware) initializes hardware before first `send`/`receive`
-- [ ] `connect()` (host) resolves only after the connection is actually open
-- [ ] `disconnect()` (host) cleans up resources (close sockets, release ports)
-- [ ] Both sides handle partial messages (data split across chunks)
+- [ ] `send()` appends a newline
+- [ ] `receive()` returns complete lines without newline
+- [ ] `receive()` returns `""` when no data available (never blocks)
+- [ ] `available()` is non-blocking
+- [ ] `begin()` / `open()` initializes before first send/receive
+- [ ] `close()` releases all resources
+- [ ] Line-buffered accumulation handles partial data
+- [ ] Half-duplex constraints respected (if applicable)
+- [ ] Buffer sized for JSON messages (512 bytes minimum)

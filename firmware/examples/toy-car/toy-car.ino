@@ -1,97 +1,149 @@
+#include <SoftwareSerial.h>
 #include "origin.h"
 #include "transports/bluetooth_transport.h"
 
+// SoftwareSerial MUST be declared in the .ino file.
+// HC-05 TX -> A4 (RX), HC-05 RX -> A5 (TX)
+SoftwareSerial BTserial(A4, A5);
+
 Origin origin;
 
-// --- Pin definitions ---
-const int trigPin = 7;
-const int echoPin = 8;
+// Motor pins (no timer conflicts)
+const int ENA = 11;   // Left speed  (Timer2)
+const int IN1 = 8;    // Left fwd
+const int IN2 = 4;    // Left bwd
+const int ENB = 6;    // Right speed (Timer0)
+const int IN3 = 7;    // Right fwd
+const int IN4 = 10;   // Right bwd
 
-const int leftMotorPin1  = 2;
-const int leftMotorPin2  = 3;
-const int rightMotorPin1 = 4;
-const int rightMotorPin2 = 5;
+const int TRIG_PIN = A1;
+const int ECHO_PIN = A0;
 
-// Pin arrays for registration
-int ultrasonicPins[] = {trigPin, echoPin};
-int motorPins[] = {leftMotorPin1, leftMotorPin2, rightMotorPin1, rightMotorPin2};
+// Pin arrays (must be global — stored by pointer)
+int ultrasonicPins[] = {TRIG_PIN, ECHO_PIN};
+int motorPins[] = {ENA, IN1, IN2, ENB, IN3, IN4};
 
-// --- Sensor read functions (auto-polled every tick) ---
+// --- Sensor read function ---
 
 void readDistance(Readings& readings) {
-    digitalWrite(trigPin, LOW);
+    digitalWrite(TRIG_PIN, LOW);
     delayMicroseconds(2);
-    digitalWrite(trigPin, HIGH);
+    digitalWrite(TRIG_PIN, HIGH);
     delayMicroseconds(10);
-    digitalWrite(trigPin, LOW);
-    long duration = pulseIn(echoPin, HIGH);
-    float distance = duration * 0.034 / 2;
-    readings.set("distance", distance);
+    digitalWrite(TRIG_PIN, LOW);
+
+    long duration = pulseIn(ECHO_PIN, HIGH, 25000);
+    if (duration == 0) {
+        readings.set("distance", -1.0f);
+    } else {
+        readings.set("distance", duration * 0.0343f / 2.0f);
+    }
 }
 
-// --- Action functions (persist until overridden) ---
+// --- Motor helpers ---
+
+void stopMotors() {
+    analogWrite(ENA, 0);
+    analogWrite(ENB, 0);
+    digitalWrite(IN1, LOW);
+    digitalWrite(IN2, LOW);
+    digitalWrite(IN3, LOW);
+    digitalWrite(IN4, LOW);
+}
+
+void setMotors(int leftDir, int rightDir, int speed) {
+    digitalWrite(IN1, LOW);
+    digitalWrite(IN2, LOW);
+    digitalWrite(IN3, LOW);
+    digitalWrite(IN4, LOW);
+
+    if (leftDir > 0) digitalWrite(IN1, HIGH);
+    else if (leftDir < 0) digitalWrite(IN2, HIGH);
+
+    if (rightDir > 0) digitalWrite(IN3, HIGH);
+    else if (rightDir < 0) digitalWrite(IN4, HIGH);
+
+    int s = constrain(speed, 0, 255);
+    analogWrite(ENA, s / 2);
+    delay(50);
+    analogWrite(ENB, s / 2);
+    delay(50);
+    analogWrite(ENA, s);
+    delay(30);
+    analogWrite(ENB, s);
+}
+
+// --- Action functions ---
 
 void moveFwd(Params params) {
-    digitalWrite(leftMotorPin1, LOW);
-    digitalWrite(leftMotorPin2, HIGH);
-    digitalWrite(rightMotorPin1, HIGH);
-    digitalWrite(rightMotorPin2, LOW);
+    int speed = (int)params.get("speed", 200);
+    setMotors(1, 1, speed);
 }
 
 void moveBkwd(Params params) {
-    digitalWrite(leftMotorPin1, HIGH);
-    digitalWrite(leftMotorPin2, LOW);
-    digitalWrite(rightMotorPin1, LOW);
-    digitalWrite(rightMotorPin2, HIGH);
+    int speed = (int)params.get("speed", 200);
+    setMotors(-1, -1, speed);
 }
 
-void turnLeft(Params params) {
-    digitalWrite(leftMotorPin1, LOW);
-    digitalWrite(leftMotorPin2, LOW);
-    digitalWrite(rightMotorPin1, HIGH);
-    digitalWrite(rightMotorPin2, LOW);
+void moveRight(Params params) {
+    int speed = (int)params.get("speed", 200);
+    int angle = (int)params.get("angle", 90);
+    setMotors(1, -1, speed);
+    delay(angle * 8);
+    stopMotors();
 }
 
-void turnRight(Params params) {
-    digitalWrite(leftMotorPin1, LOW);
-    digitalWrite(leftMotorPin2, HIGH);
-    digitalWrite(rightMotorPin1, LOW);
-    digitalWrite(rightMotorPin2, LOW);
+void moveLeft(Params params) {
+    int speed = (int)params.get("speed", 200);
+    int angle = (int)params.get("angle", 90);
+    setMotors(-1, 1, speed);
+    delay(angle * 8);
+    stopMotors();
 }
 
 void stop(Params params) {
-    digitalWrite(leftMotorPin1, LOW);
-    digitalWrite(leftMotorPin2, LOW);
-    digitalWrite(rightMotorPin1, LOW);
-    digitalWrite(rightMotorPin2, LOW);
+    stopMotors();
 }
 
+// --- Setup ---
+
 void setup() {
-    // Motor pins
-    pinMode(leftMotorPin1, OUTPUT);
-    pinMode(leftMotorPin2, OUTPUT);
-    pinMode(rightMotorPin1, OUTPUT);
-    pinMode(rightMotorPin2, OUTPUT);
+    pinMode(ENA, OUTPUT);
+    pinMode(IN1, OUTPUT);
+    pinMode(IN2, OUTPUT);
+    pinMode(ENB, OUTPUT);
+    pinMode(IN3, OUTPUT);
+    pinMode(IN4, OUTPUT);
+    pinMode(TRIG_PIN, OUTPUT);
+    pinMode(ECHO_PIN, INPUT);
 
-    // Ultrasonic pins
-    pinMode(trigPin, OUTPUT);
-    pinMode(echoPin, INPUT);
+    Serial.begin(9600);
 
-    // Transport: Bluetooth on pins 10 (RX), 11 (TX)
-    origin.setTransport(new BluetoothTransport(10, 11, 9600));
+    origin.setDeviceId("toy-car");
+    origin.setTransport(new BluetoothTransport(BTserial, 9600));
 
-    // Register sensors — auto-polled every tick
+    // Register hardware with pins
     origin.registerSensor("ultrasonic", ultrasonicPins, 2, readDistance);
+    origin.registerChip("h-bridge", motorPins, 6);
 
-    // Register chip (for documentation / introspection)
-    origin.registerChip("h_bridge", motorPins, 4);
-
-    // Register actions — persist until overridden
+    // Register actions
     origin.registerAction("moveFwd", moveFwd);
     origin.registerAction("moveBkwd", moveBkwd);
-    origin.registerAction("turnLeft", turnLeft);
-    origin.registerAction("turnRight", turnRight);
+    origin.registerAction("moveRight", moveRight);
+    origin.registerAction("moveLeft", moveLeft);
     origin.registerAction("stop", stop);
+
+    // Define state schema
+    origin.defineState("distance", ORIGIN_FLOAT);
+    origin.defineState("speed", ORIGIN_INT);
+    origin.defineState("angle", ORIGIN_INT);
+
+    stopMotors();
+
+    // Perform handshake — blocks until server sends ack
+    Serial.println("Waiting for handshake...");
+    origin.handshake();
+    Serial.println("Handshake complete!");
 }
 
 void loop() {

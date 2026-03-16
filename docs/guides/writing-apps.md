@@ -1,403 +1,278 @@
-# Writing Origin Apps
+# Writing Origin Apps (v0.2)
 
-This guide covers everything you need to know to write Origin apps — from your first "hello sensor" to advanced patterns like state machines and multi-sensor fusion.
-
----
-
-## The Basics
-
-An Origin app is a TypeScript object with a `name` and a `loop` function:
-
-```ts
-import type { OriginApp } from "@aorigin/core";
-
-const app: OriginApp = {
-    name: "my-app",
-    async loop(ctx) {
-        // Your logic here. This runs ~20 times per second.
-    },
-};
-
-export default app;
-```
-
-That's it. Export it as default, and the launcher can run it.
+Origin apps are programs that control Arduino devices through the Origin server's HTTP API. You can write them in TypeScript or Python.
 
 ---
 
-## Lifecycle
+## Setup
 
-Apps have three lifecycle hooks:
+### TypeScript Client
 
-### `setup(ctx)` — runs once at start
-
-Use this for one-time initialization: opening files, connecting to APIs, loading ML models, calibrating sensors.
-
-```ts
-const app: OriginApp = {
-    name: "calibrator",
-
-    async setup(ctx) {
-        const readings = await ctx.read();
-        this.baseline = readings.distance as number;
-        console.log(`Baseline distance: ${this.baseline}`);
-    },
-
-    async loop(ctx) {
-        const readings = await ctx.read();
-        const delta = (readings.distance as number) - this.baseline;
-        console.log(`Delta from baseline: ${delta}`);
-    },
-};
+```bash
+cd clients/typescript
+npm install
+npm run build
 ```
 
-### `loop(ctx)` — runs continuously
-
-Called by the launcher at the configured tick rate (default: 50ms / ~20Hz). Each call gets a fresh `AppContext` with the latest sensor readings.
-
-**Do not write your own while loop.** The launcher owns the tick. Your `loop()` should do one iteration of work and return.
-
 ```ts
-// GOOD — one iteration, returns
-async loop(ctx) {
-    const readings = await ctx.read();
-    if (readings.distance < 10) {
-        await ctx.send("stop");
-    }
-}
+import { OriginClient } from "@aorigin/client";
 
-// BAD — blocks the launcher forever
-async loop(ctx) {
-    while (true) {  // Don't do this!
-        const readings = await ctx.read();
-        // ...
-    }
-}
+const client = new OriginClient({ url: "http://localhost:3000" });
 ```
 
-### `teardown(ctx)` — runs once at stop
+### Python Client
 
-Use this to clean up: close file handles, send a final "stop" action, log summary data.
+```bash
+cd clients/python
+pip install -e .
+```
+
+```python
+from origin_client import OriginClient
+
+client = OriginClient("http://localhost:3000")
+```
+
+If the server has auth enabled:
 
 ```ts
-const app: OriginApp = {
-    name: "data-logger",
+const client = new OriginClient({ url: "http://localhost:3000", token: "my-secret" });
+```
 
-    async teardown(ctx) {
-        await ctx.send("stop");
-        console.log("Motors stopped. Goodbye.");
-    },
-};
+```python
+client = OriginClient("http://localhost:3000", token="my-secret")
 ```
 
 ---
 
-## The AppContext Object
+## Core Operations
 
-Every lifecycle method receives a `ctx` object with three things:
+### Discover Devices
 
-### `ctx.readings`
-
-A plain object containing the latest sensor values, auto-updated before each `loop()` call.
-
+**TypeScript:**
 ```ts
-async loop(ctx) {
-    console.log(ctx.readings);
-    // { distance: 24.5, temperature: 31.2 }
+const devices = await client.listDevices();
+for (const d of devices) {
+    console.log(`${d.id} — ${d.actions.join(", ")}`);
 }
+
+const detail = await client.getDevice("toy-car");
+console.log(detail.manifest.sensors);
 ```
 
-Values are typed as `number | string | boolean`. Since the firmware sends floats, you'll typically cast:
+**Python:**
+```python
+devices = client.list_devices()
+for d in devices:
+    print(f"{d.id} — {', '.join(d.actions)}")
 
+detail = client.get_device("toy-car")
+print(detail.manifest.sensors)
+```
+
+### Read State
+
+**TypeScript:**
 ```ts
-const distance = ctx.readings.distance as number;
+const state = await client.getDeviceState("toy-car");
+console.log(`Distance: ${state.distance}`);
 ```
 
-### `ctx.send(action, params?)`
+**Python:**
+```python
+state = client.get_device_state("toy-car")
+print(f"Distance: {state['distance']}")
+```
 
-Send an action to the Arduino. The action persists until you send a different one.
+### Send Actions
 
+**TypeScript:**
 ```ts
-await ctx.send("moveFwd");                    // no params
-await ctx.send("moveFwd", { speed: 200 });    // with params
-await ctx.send("stop");                        // override previous
+await client.sendAction("toy-car", "moveFwd", { speed: 200 });
+await client.sendAction("toy-car", "stop");
 ```
 
-**Sending the same action again is a no-op on the firmware.** The firmware is already running that action. But it's harmless — if your logic sends `moveFwd` every tick, it works fine. The firmware just keeps doing what it's doing.
-
-### `ctx.read()`
-
-Force a fresh read from the transport. Returns the same type as `ctx.readings`.
-
-```ts
-const readings = await ctx.read();
+**Python:**
+```python
+client.send_action("toy-car", "moveFwd", {"speed": 200})
+client.send_action("toy-car", "stop")
 ```
 
-Usually unnecessary — `ctx.readings` is already fresh at the start of each `loop()`. Use `ctx.read()` if:
-- Your loop takes a long time (heavy computation) and you want mid-loop updates
-- You're in `setup()` or `teardown()` and need a current snapshot
+Actions persist on the device until a new action is sent. You do not need to repeatedly send the same action.
 
 ---
 
 ## Patterns
 
-### Pattern: State Machine
+### Polling Loop
 
-For complex behavior, model your app as a state machine:
+The simplest pattern: read state, decide, act, repeat.
 
+**TypeScript:**
 ```ts
-type State = "scanning" | "avoiding" | "stopped";
+async function run() {
+    const deviceId = "toy-car";
 
-let state: State = "scanning";
-
-const app: OriginApp = {
-    name: "state-machine-bot",
-
-    async loop(ctx) {
-        const distance = (await ctx.read()).distance as number;
-
-        switch (state) {
-            case "scanning":
-                await ctx.send("moveFwd");
-                if (distance < 15) {
-                    state = "avoiding";
-                }
-                break;
-
-            case "avoiding":
-                await ctx.send("turnRight");
-                if (distance > 30) {
-                    state = "scanning";
-                }
-                break;
-
-            case "stopped":
-                await ctx.send("stop");
-                break;
-        }
-    },
-};
-```
-
-### Pattern: Debouncing
-
-Sensor readings can be noisy. Average over multiple ticks:
-
-```ts
-const history: number[] = [];
-const WINDOW = 5;
-
-const app: OriginApp = {
-    name: "smoothed-reader",
-
-    async loop(ctx) {
-        const readings = await ctx.read();
-        const distance = readings.distance as number;
-
-        history.push(distance);
-        if (history.length > WINDOW) history.shift();
-
-        const avg = history.reduce((a, b) => a + b, 0) / history.length;
-        console.log(`Smoothed distance: ${avg.toFixed(1)}`);
-
-        if (avg < 10) {
-            await ctx.send("stop");
-        } else {
-            await ctx.send("moveFwd");
-        }
-    },
-};
-```
-
-### Pattern: Timed Actions
-
-Do something for a fixed duration, then switch:
-
-```ts
-let reverseUntil = 0;
-
-const app: OriginApp = {
-    name: "timed-reverse",
-
-    async loop(ctx) {
-        const now = Date.now();
-        const distance = (await ctx.read()).distance as number;
-
-        if (reverseUntil > now) {
-            // Still reversing — do nothing, action persists
-            return;
-        }
+    while (true) {
+        const state = await client.getDeviceState(deviceId);
+        const distance = state.distance ?? 999;
 
         if (distance < 10) {
-            await ctx.send("moveBkwd");
-            reverseUntil = now + 1000;  // reverse for 1 second
+            await client.sendAction(deviceId, "moveBkwd", { speed: 200 });
         } else {
-            await ctx.send("moveFwd");
+            await client.sendAction(deviceId, "moveFwd", { speed: 200 });
+        }
+
+        await new Promise(r => setTimeout(r, 200));
+    }
+}
+```
+
+**Python:**
+```python
+import time
+
+device_id = "toy-car"
+
+while True:
+    state = client.get_device_state(device_id)
+    distance = state.get("distance", 999)
+
+    if distance < 10:
+        client.send_action(device_id, "moveBkwd", {"speed": 200})
+    else:
+        client.send_action(device_id, "moveFwd", {"speed": 200})
+
+    time.sleep(0.2)
+```
+
+### Event-Driven (SSE)
+
+Subscribe to real-time state updates instead of polling.
+
+**TypeScript:**
+```ts
+const sub = client.subscribe({
+    deviceId: "toy-car",
+    onEvent(event, data) {
+        if (event === "state.updated") {
+            const state = (data.data as any).state;
+            console.log("State:", state);
         }
     },
-};
+    onError(err) {
+        console.error("SSE error:", err);
+    },
+});
+
+// Later: sub.close()
 ```
 
-### Pattern: Multiple Sensors
+**Python:**
+```python
+def on_event(event_type, data):
+    if event_type == "state.updated":
+        state = data["data"]["state"]
+        print(f"State: {state}")
 
-When your Arduino has multiple sensors, they all appear in the same `readings` object:
+sub = client.subscribe(device_id="toy-car", on_event=on_event)
 
-```ts
-// Firmware registered: readDistance → "distance", readTemp → "temperature", readLight → "light"
-
-const app: OriginApp = {
-    name: "multi-sensor",
-
-    async loop(ctx) {
-        const readings = await ctx.read();
-        const distance = readings.distance as number;
-        const temp = readings.temperature as number;
-        const light = readings.light as number;
-
-        console.log(`dist=${distance} temp=${temp} light=${light}`);
-
-        // Complex decision using all sensors
-        if (temp > 40) {
-            await ctx.send("stop");  // overheating
-        } else if (distance < 10) {
-            await ctx.send("moveBkwd");
-        } else if (light < 50) {
-            await ctx.send("lightsOn");
-        } else {
-            await ctx.send("moveFwd");
-        }
-    },
-};
+# Later: sub.close()
 ```
 
-### Pattern: External APIs and ML
-
-Since your app runs on a full computer (not a microcontroller), you have access to the entire Node.js ecosystem:
+### State Machine
 
 ```ts
-import type { OriginApp } from "@aorigin/core";
+type Mode = "scanning" | "avoiding" | "stopped";
+let mode: Mode = "scanning";
+let turnUntil = 0;
 
-const app: OriginApp = {
-    name: "weather-aware-bot",
+setInterval(async () => {
+    const state = await client.getDeviceState("toy-car");
+    const distance = state.distance ?? 999;
+    const now = Date.now();
 
-    async loop(ctx) {
-        // Fetch from an API (throttle this in production!)
-        const res = await fetch("https://api.weather.example/current");
-        const weather = await res.json();
+    switch (mode) {
+        case "scanning":
+            await client.sendAction("toy-car", "moveFwd", { speed: 200 });
+            if (distance < 15) mode = "avoiding";
+            break;
 
-        if (weather.isRaining) {
-            await ctx.send("seekShelter");
-        } else {
-            await ctx.send("moveFwd");
-        }
-    },
-};
+        case "avoiding":
+            await client.sendAction("toy-car", "moveRight", { speed: 150 });
+            if (distance > 30) mode = "scanning";
+            break;
+
+        case "stopped":
+            await client.sendAction("toy-car", "stop");
+            break;
+    }
+}, 200);
 ```
 
-For ML inference:
+### Webhooks
 
+Register a webhook to receive events at a URL. Useful for server-to-server integrations.
+
+**TypeScript:**
 ```ts
-import type { OriginApp } from "@aorigin/core";
-import { loadModel, predict } from "./my-ml-utils.js";
+const webhook = await client.registerWebhook({
+    url: "https://my-server.example/origin-events",
+    events: ["state.updated", "device.disconnected"],
+    secret: "my-hmac-secret",
+});
 
-let model: any;
-
-const app: OriginApp = {
-    name: "gesture-driver",
-
-    async setup() {
-        model = await loadModel("gesture-classifier");
-    },
-
-    async loop(ctx) {
-        const frame = await getCameraFrame();
-        const gesture = await predict(model, frame);
-
-        // Map gesture to action
-        const actionMap: Record<string, string> = {
-            "open_hand": "stop",
-            "fist": "moveFwd",
-            "point_left": "turnLeft",
-            "point_right": "turnRight",
-        };
-
-        const action = actionMap[gesture] ?? "stop";
-        await ctx.send(action);
-    },
-};
+console.log(`Webhook registered: ${webhook.id}`);
 ```
 
-### Pattern: Logging and Data Collection
+The server sends POST requests to your URL with a JSON body. If a secret is configured, the request includes an `X-Origin-Signature` header with an HMAC-SHA256 signature.
 
+---
+
+## Error Handling
+
+Both clients throw typed errors on non-2xx responses.
+
+**TypeScript:**
 ```ts
-import { appendFileSync } from "fs";
-import type { OriginApp } from "@aorigin/core";
+import { OriginError } from "@aorigin/client";
 
-const app: OriginApp = {
-    name: "data-collector",
+try {
+    await client.sendAction("toy-car", "nonexistent");
+} catch (err) {
+    if (err instanceof OriginError) {
+        console.error(`Status ${err.status}: ${err.message}`);
+        console.error("Body:", err.body);
+    }
+}
+```
 
-    setup() {
-        appendFileSync("log.csv", "timestamp,distance,temperature\n");
-    },
+**Python:**
+```python
+from origin_client import OriginError
 
-    async loop(ctx) {
-        const readings = await ctx.read();
-        const line = `${Date.now()},${readings.distance},${readings.temperature}\n`;
-        appendFileSync("log.csv", line);
-    },
-};
+try:
+    client.send_action("toy-car", "nonexistent")
+except OriginError as e:
+    print(f"Status {e.status}: {e}")
+    print(f"Body: {e.body}")
 ```
 
 ---
 
-## Running Apps
+## Examples
 
-### Using the CLI runner
+The `examples/` directory contains complete working programs:
 
-The included `run.ts` script handles connection and lifecycle:
+| File | Language | Pattern | Description |
+|------|----------|---------|-------------|
+| `obstacle-avoider.ts` | TypeScript | Polling | Navigate around obstacles |
+| `state-monitor.ts` | TypeScript | SSE | Real-time state display |
+| `gesture-controller.py` | Python | Polling | Simulated ML gesture control |
+| `data-logger.py` | Python | SSE | Log state changes to CSV |
 
+Run them:
 ```bash
-npx tsx apps/run.ts --port /dev/ttyUSB0 --app my-app
+npx tsx examples/obstacle-avoider.ts http://localhost:3000 toy-car
+python examples/gesture-controller.py http://localhost:3000 toy-car
 ```
-
-- `--port` — the serial port path (required)
-- `--app` — the app filename without `.ts` extension (default: `obstacle-avoider`)
-
-Press `Ctrl+C` for graceful shutdown (calls `teardown()` and disconnects).
-
-### Programmatic usage
-
-For more control, use the Launcher directly:
-
-```ts
-import { Launcher } from "@aorigin/launcher";
-import { SerialTransport } from "@aorigin/transport-serial";
-import myApp from "./my-app.js";
-
-const transport = new SerialTransport({ path: "/dev/ttyUSB0" });
-const launcher = new Launcher(transport, { tickInterval: 100 });  // 10Hz
-
-await launcher.connect();
-await launcher.run(myApp);
-
-// Swap apps at runtime:
-// await launcher.run(otherApp);
-
-// Clean shutdown:
-// await launcher.disconnect();
-```
-
-### Adjusting tick rate
-
-The default is 50ms (~20Hz). Adjust based on your needs:
-
-- **10ms (100Hz)** — fast-response applications (PID control, fast sensors)
-- **50ms (20Hz)** — general purpose (default)
-- **100ms (10Hz)** — slow sensors, data logging
-- **1000ms (1Hz)** — monitoring, periodic checks
-
-```ts
-const launcher = new Launcher(transport, { tickInterval: 10 });  // 100Hz
-```
-
-Note: the actual tick rate depends on how long your `loop()` takes. If `loop()` takes 200ms, you'll only get ~5Hz regardless of the interval setting.
