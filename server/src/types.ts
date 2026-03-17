@@ -100,6 +100,26 @@ export interface SSEEvent {
   timestamp: string;
 }
 
+// --- Config file (config.ts in cwd) ---
+
+export interface OriginConfig {
+  serial?: string | string[];
+  bluetooth?: string | string[];
+  port?: number;
+  baudRate?: number;
+  token?: string;
+  webhooks?: WebhookRegistration[];
+}
+
+export function defineConfig(config: OriginConfig = {}): OriginConfig {
+  return {
+    bluetooth: "/dev/tty.HC-05",
+    port: 3000,
+    baudRate: 9600,
+    ...config,
+  };
+}
+
 // --- Transport interface (server side) ---
 
 export interface ServerTransport {
