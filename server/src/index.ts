@@ -2,13 +2,14 @@
 
 import { readFileSync, existsSync } from "node:fs";
 import { resolve } from "node:path";
+import { pathToFileURL } from "node:url";
 import { DeviceManager } from "./device-manager.js";
 import { SSEManager } from "./sse.js";
 import { WebhookManager } from "./webhooks.js";
 import { createOriginServer } from "./server.js";
 import { createAuthMiddleware } from "./auth.js";
 import { SerialServerTransport, BluetoothServerTransport } from "./transport.js";
-import type { SSEEvent, ServerTransport } from "./types.js";
+import type { SSEEvent, ServerTransport, OriginConfig } from "./types.js";
 
 // --- CLI argument parsing ---
 
@@ -104,7 +105,15 @@ Options:
   --config, -c <path>     Load config from JSON file
   --help, -h              Show this help
 
-Config file format:
+Config file (config.ts in cwd):
+  import { defineConfig } from "origin-server";
+
+  export default defineConfig({
+    token: "my-secret-token",
+  });
+  // defaults: bluetooth HC-05, port 3000, baud 9600
+
+JSON config file (--config):
   {
     "serial": ["/dev/ttyUSB0"],
     "bluetooth": ["/dev/tty.HC-05"],
@@ -114,6 +123,7 @@ Config file format:
   }
 
 Examples:
+  origin-server                                      # uses config.ts from cwd
   origin-server --serial /dev/ttyUSB0
   origin-server -s /dev/ttyUSB0 -s /dev/ttyUSB1 -p 8080
   origin-server --bluetooth /dev/tty.HC-05 --token my-secret
@@ -121,13 +131,51 @@ Examples:
 `);
 }
 
+// --- Config file loader ---
+
+function toArray(val: string | string[] | undefined): string[] {
+  if (!val) return [];
+  return Array.isArray(val) ? val : [val];
+}
+
+async function loadConfigFile(): Promise<OriginConfig | null> {
+  // Try config.ts first (must be compiled), then config.js
+  for (const name of ["config.ts", "config.js"]) {
+    const filePath = resolve(process.cwd(), name);
+    if (!existsSync(filePath)) continue;
+
+    try {
+      const fileUrl = pathToFileURL(filePath).href;
+      const mod = await import(fileUrl);
+      const config: OriginConfig = mod.default ?? mod;
+      console.log(`[config] Loaded ${name}`);
+      return config;
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      console.error(`[config] Failed to load ${name}: ${message}`);
+    }
+  }
+  return null;
+}
+
 // --- Main ---
 
 async function main() {
-  const config = parseArgs(process.argv.slice(2));
+  // Load config.ts from cwd as the base, then overlay CLI args
+  const fileConfig = await loadConfigFile();
+  const cliConfig = parseArgs(process.argv.slice(2));
+
+  const config: Config = {
+    serial: cliConfig.serial.length > 0 ? cliConfig.serial : toArray(fileConfig?.serial),
+    bluetooth: cliConfig.bluetooth.length > 0 ? cliConfig.bluetooth : toArray(fileConfig?.bluetooth),
+    port: cliConfig.port !== 3000 ? cliConfig.port : (fileConfig?.port ?? 3000),
+    baudRate: cliConfig.baudRate !== 9600 ? cliConfig.baudRate : (fileConfig?.baudRate ?? 9600),
+    token: cliConfig.token ?? fileConfig?.token ?? null,
+  };
 
   if (config.serial.length === 0 && config.bluetooth.length === 0) {
     console.error("Error: At least one --serial or --bluetooth device path is required.");
+    console.error("       Provide via CLI flags, config.json (--config), or config.ts in the cwd.");
     printHelp();
     process.exit(1);
   }
