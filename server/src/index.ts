@@ -8,6 +8,7 @@ import { WebhookManager } from "./webhooks.js";
 import { createOriginServer } from "./server.js";
 import { createAuthMiddleware } from "./auth.js";
 import { SerialServerTransport, BluetoothServerTransport } from "./transport.js";
+import { TCPServerTransport } from "./tcp-transport.js";
 import type { SSEEvent, ServerTransport } from "./types.js";
 
 // --- CLI argument parsing ---
@@ -15,6 +16,7 @@ import type { SSEEvent, ServerTransport } from "./types.js";
 interface Config {
   serial: string[];
   bluetooth: string[];
+  tcp: number[];
   port: number;
   baudRate: number;
   token: string | null;
@@ -24,6 +26,7 @@ function parseArgs(args: string[]): Config {
   const config: Config = {
     serial: [],
     bluetooth: [],
+    tcp: [],
     port: 3000,
     baudRate: 9600,
     token: null,
@@ -41,6 +44,9 @@ function parseArgs(args: string[]): Config {
       case "--bluetooth":
       case "-b":
         if (next) { config.bluetooth.push(next); i++; }
+        break;
+      case "--tcp":
+        if (next) { config.tcp.push(parseInt(next, 10)); i++; }
         break;
       case "--port":
       case "-p":
@@ -61,6 +67,7 @@ function parseArgs(args: string[]): Config {
             const fileConfig = JSON.parse(readFileSync(configPath, "utf-8"));
             if (fileConfig.serial) config.serial.push(...(Array.isArray(fileConfig.serial) ? fileConfig.serial : [fileConfig.serial]));
             if (fileConfig.bluetooth) config.bluetooth.push(...(Array.isArray(fileConfig.bluetooth) ? fileConfig.bluetooth : [fileConfig.bluetooth]));
+            if (fileConfig.tcp) config.tcp.push(...(Array.isArray(fileConfig.tcp) ? fileConfig.tcp : [fileConfig.tcp]));
             if (fileConfig.port) config.port = fileConfig.port;
             if (fileConfig.baudRate) config.baudRate = fileConfig.baudRate;
             if (fileConfig.token) config.token = fileConfig.token;
@@ -98,6 +105,7 @@ Usage:
 Options:
   --serial, -s <path>     Serial port path (can repeat for multiple devices)
   --bluetooth, -b <path>  Bluetooth serial path (can repeat)
+  --tcp <port>            TCP port for simulator connection (can repeat)
   --port, -p <number>     HTTP port (default: 3000)
   --baud <number>         Baud rate (default: 9600)
   --token, -t <string>    Bearer token for API auth (optional)
@@ -108,6 +116,7 @@ Config file format:
   {
     "serial": ["/dev/ttyUSB0"],
     "bluetooth": ["/dev/tty.HC-05"],
+    "tcp": [9000],
     "port": 3000,
     "baudRate": 9600,
     "token": "my-secret-token"
@@ -117,6 +126,8 @@ Examples:
   origin-server --serial /dev/ttyUSB0
   origin-server -s /dev/ttyUSB0 -s /dev/ttyUSB1 -p 8080
   origin-server --bluetooth /dev/tty.HC-05 --token my-secret
+  origin-server --tcp 9000
+  origin-server -s /dev/ttyUSB0 --tcp 9000
   origin-server --config origin.config.json
 `);
 }
@@ -126,8 +137,8 @@ Examples:
 async function main() {
   const config = parseArgs(process.argv.slice(2));
 
-  if (config.serial.length === 0 && config.bluetooth.length === 0) {
-    console.error("Error: At least one --serial or --bluetooth device path is required.");
+  if (config.serial.length === 0 && config.bluetooth.length === 0 && config.tcp.length === 0) {
+    console.error("Error: At least one --serial, --bluetooth, or --tcp transport is required.");
     printHelp();
     process.exit(1);
   }
@@ -167,6 +178,12 @@ async function main() {
   for (const path of config.bluetooth) {
     console.log(`[init] Connecting bluetooth: ${path} @ ${config.baudRate} baud`);
     const transport = new BluetoothServerTransport(path, config.baudRate);
+    transports.push(transport);
+  }
+
+  for (const tcpPort of config.tcp) {
+    console.log(`[init] Waiting for simulator on TCP port ${tcpPort}`);
+    const transport = new TCPServerTransport(tcpPort);
     transports.push(transport);
   }
 
