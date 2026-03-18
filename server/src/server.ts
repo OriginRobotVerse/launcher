@@ -94,6 +94,19 @@ export function createOriginServer(opts: ServerOptions) {
         return;
       }
 
+      // --- Discover ---
+      if (path === "/discover" && method === "POST") {
+        const result = await deviceManager.discover();
+        json(res, 200, result);
+        return;
+      }
+
+      // --- Port statuses ---
+      if (path === "/ports" && method === "GET") {
+        json(res, 200, deviceManager.getPortStatuses());
+        return;
+      }
+
       // --- Devices list ---
       if (path === "/devices" && method === "GET") {
         json(res, 200, deviceManager.listDevices());
@@ -109,7 +122,7 @@ export function createOriginServer(opts: ServerOptions) {
       // --- Webhooks ---
       if (path === "/webhooks") {
         if (method === "GET") {
-          json(res, 200, webhookManager.list());
+          json(res, 200, await webhookManager.list());
           return;
         }
         if (method === "POST") {
@@ -125,7 +138,7 @@ export function createOriginServer(opts: ServerOptions) {
             json(res, 400, { error: "url is required" });
             return;
           }
-          const webhook = webhookManager.register(registration);
+          const webhook = await webhookManager.register(registration);
           json(res, 201, webhook);
           return;
         }
@@ -134,7 +147,7 @@ export function createOriginServer(opts: ServerOptions) {
       // --- Webhook delete ---
       const webhookDelete = path.match(/^\/webhooks\/([^/]+)$/);
       if (webhookDelete && method === "DELETE") {
-        const removed = webhookManager.remove(webhookDelete[1]);
+        const removed = await webhookManager.remove(webhookDelete[1]);
         if (removed) {
           json(res, 200, { ok: true });
         } else {

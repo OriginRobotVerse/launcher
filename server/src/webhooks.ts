@@ -1,11 +1,15 @@
 import { createHmac } from "node:crypto";
 import { randomUUID } from "node:crypto";
-import type { SSEEvent, Webhook, WebhookRegistration } from "./types.js";
+import type { SSEEvent, StorageAdapter, Webhook, WebhookRegistration } from "./types.js";
 
 export class WebhookManager {
-  private webhooks: Map<string, Webhook> = new Map();
+  private storage: StorageAdapter;
 
-  register(registration: WebhookRegistration): Webhook {
+  constructor(storage: StorageAdapter) {
+    this.storage = storage;
+  }
+
+  async register(registration: WebhookRegistration): Promise<Webhook> {
     const webhook: Webhook = {
       id: randomUUID(),
       url: registration.url,
@@ -19,16 +23,20 @@ export class WebhookManager {
       secret: registration.secret,
     };
 
-    this.webhooks.set(webhook.id, webhook);
+    await this.storage.setWebhook(webhook.id, webhook);
     return webhook;
   }
 
-  remove(id: string): boolean {
-    return this.webhooks.delete(id);
+  async remove(id: string): Promise<boolean> {
+    const existing = await this.storage.getWebhook(id);
+    if (!existing) return false;
+    await this.storage.removeWebhook(id);
+    return true;
   }
 
-  list(): Webhook[] {
-    return Array.from(this.webhooks.values()).map((w) => ({
+  async list(): Promise<Webhook[]> {
+    const webhooks = await this.storage.listWebhooks();
+    return webhooks.map((w) => ({
       id: w.id,
       url: w.url,
       events: w.events,
@@ -38,6 +46,8 @@ export class WebhookManager {
   }
 
   async dispatch(event: SSEEvent): Promise<void> {
+    const webhooks = await this.storage.listWebhooks();
+
     const payload = JSON.stringify({
       event: event.event,
       deviceId: event.deviceId,
@@ -47,7 +57,7 @@ export class WebhookManager {
 
     const promises: Promise<void>[] = [];
 
-    for (const webhook of this.webhooks.values()) {
+    for (const webhook of webhooks) {
       // Only dispatch if the webhook is subscribed to this event type
       if (!webhook.events.includes(event.event)) continue;
 
