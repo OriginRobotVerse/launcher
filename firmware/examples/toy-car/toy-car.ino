@@ -1,6 +1,7 @@
 #include "origin.h"
 #include "transports/bluetooth_transport.h"
 Origin origin;
+Servo servo_28;
 // L298N Motor Driver pins (Arduino Mega)
 // Motor A (Left)
 const int ENA = 5;
@@ -10,8 +11,9 @@ const int IN2 = 4;
 const int IN3 = 7;
 const int IN4 = 8;
 const int ENB = 6;
-const int TRIG_PIN = A1;
-const int ECHO_PIN = A0;
+const int TRIG_PIN = 22;
+const int ECHO_PIN = 24;
+const int SERVO_PIN = 28;
 // Pin arrays (must be global — stored by pointer)
 int ultrasonicPins[] = {TRIG_PIN, ECHO_PIN};
 int motorPins[] = {ENA, IN1, IN2, ENB, IN3, IN4};
@@ -57,7 +59,7 @@ void motorB(int dir, int speed) {
         digitalWrite(IN4, LOW);
     }
     analogWrite(ENB, dir != 0 ? speed : 0);
-}
+} 
 void stopMotors() {
     motorA(0, 0);
     motorB(0, 0);
@@ -114,6 +116,7 @@ void setup() {
     pinMode(IN4, OUTPUT);
     pinMode(TRIG_PIN, OUTPUT);
     pinMode(ECHO_PIN, INPUT);
+    servo_28.attach(SERVO_PIN);
     Serial.begin(9600);
     origin.setDeviceId("toy-car");
     origin.setTransport(new BluetoothTransport(Serial1, 9600));

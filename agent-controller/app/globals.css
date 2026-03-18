@@ -1,0 +1,78 @@
+@import "tailwindcss";
+
+:root {
+  --void: #0a0a0a;
+  --panel: #111111;
+  --panel-raised: #161616;
+  --wire: #1e1e1e;
+  --wire-bright: #2a2a2a;
+  --signal: #e8e8e8;
+  --dim: #737373;
+  --dim-dark: #4a4a4a;
+  --phosphor: #f59e0b;
+  --phosphor-bright: #fbbf24;
+  --phosphor-dim: #92400e;
+  --phosphor-glow: rgba(245, 158, 11, 0.08);
+  --phosphor-glow-strong: rgba(245, 158, 11, 0.15);
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  background: var(--void);
+  color: var(--signal);
+  font-family: var(--font-jetbrains), "JetBrains Mono", monospace;
+  font-size: 14px;
+  line-height: 1.7;
+  -webkit-font-smoothing: antialiased;
+  height: 100vh;
+  overflow: hidden;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--panel);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--wire-bright);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--dim-dark);
+}
+
+/* Chat message animations */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* Pulse for live indicator */
+@keyframes pulse-dot {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}
+
+.animate-pulse-dot {
+  animation: pulse-dot 2s ease-in-out infinite;
+}
