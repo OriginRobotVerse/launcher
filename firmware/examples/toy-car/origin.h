@@ -7,27 +7,27 @@
 // --- Compile-time limits ---
 
 #ifndef ORIGIN_MAX_SENSORS
-#define ORIGIN_MAX_SENSORS  8
+#define ORIGIN_MAX_SENSORS  4
 #endif
 
 #ifndef ORIGIN_MAX_CHIPS
-#define ORIGIN_MAX_CHIPS    8
+#define ORIGIN_MAX_CHIPS    4
 #endif
 
 #ifndef ORIGIN_MAX_ACTIONS
-#define ORIGIN_MAX_ACTIONS  16
+#define ORIGIN_MAX_ACTIONS  8
 #endif
 
 #ifndef ORIGIN_MAX_READINGS
-#define ORIGIN_MAX_READINGS 16
+#define ORIGIN_MAX_READINGS 8
 #endif
 
 #ifndef ORIGIN_MAX_PARAMS
-#define ORIGIN_MAX_PARAMS   16
+#define ORIGIN_MAX_PARAMS   10
 #endif
 
 #ifndef ORIGIN_MAX_STATE_SCHEMA
-#define ORIGIN_MAX_STATE_SCHEMA 16
+#define ORIGIN_MAX_STATE_SCHEMA 8
 #endif
 
 #ifndef ORIGIN_MAX_PINS

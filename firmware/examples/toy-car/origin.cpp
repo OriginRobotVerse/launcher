@@ -61,7 +61,7 @@ void Origin::setTransport(Transport* t) {
     transport = t;
     if (transport) {
         transport->begin();
-        Serial.println("[origin] transport ready");
+        Serial.println("tr");
     }
 }
 
@@ -116,7 +116,7 @@ void Origin::appendJsonInt(char* buf, int& pos, int maxLen, int value) {
 void Origin::sendAnnounce() {
     if (!transport) return;
 
-    Serial.println("[origin] sending announce...");
+    Serial.println("sa");
 
     char buf[ORIGIN_ANNOUNCE_BUF];
     int pos = 0;
@@ -224,7 +224,7 @@ void Origin::sendAnnounce() {
     Serial.println(pos);
 
     transport->send(buf);
-    Serial.println("[origin] announce sent");
+    Serial.println("as");
 }
 
 // --- Wait for ack ---
@@ -232,7 +232,7 @@ void Origin::sendAnnounce() {
 bool Origin::waitForAck(unsigned long timeoutMs) {
     if (!transport) return false;
 
-    Serial.println("[origin] waiting for ack...");
+    Serial.println("wa");
     unsigned long start = millis();
     char buf[ORIGIN_ACTION_BUF];
 
@@ -254,7 +254,7 @@ bool Origin::waitForAck(unsigned long timeoutMs) {
         }
         delay(10);
     }
-    Serial.println("[origin] ack timeout");
+    Serial.println("at");
     return false;
 }
 
@@ -263,28 +263,28 @@ bool Origin::waitForAck(unsigned long timeoutMs) {
 bool Origin::handshake() {
     if (!transport) return false;
 
-    Serial.println("[origin] waiting for discover to start handshake...");
+    Serial.println("dh.");
     char buf[ORIGIN_ACTION_BUF];
 
     while (true) {
         if (transport->available()) {
-            Serial.println("[origin] transport has data");
+            Serial.println("transport has data");
         }
 
         int len = readLine(buf, sizeof(buf));
         if (len > 0) {
-            Serial.print("[origin] handshake rx: ");
+            Serial.print("handshake rx: ");
             Serial.println(buf);
 
             if (strstr(buf, "\"type\"") && strstr(buf, "\"discover\"")) {
-                Serial.println("[origin] discover received, sending announce");
+                Serial.println("discover received, sending announce");
                 sendAnnounce();
                 if (waitForAck(5000)) {
                     handshakeComplete = true;
-                    Serial.println("[origin] handshake complete!");
+                    Serial.println("handshake complete!");
                     return true;
                 }
-                Serial.println("[origin] ack not received, waiting for next discover...");
+                Serial.println("ack not received, waiting for next discover...");
             }
         }
         delay(10);
@@ -308,10 +308,10 @@ int Origin::readLine(char* buf, int maxLen) {
 void Origin::tick() {
     if (!handshakeComplete) return;
 
-    pollSensors();
-    sendReadings();
     receiveIncoming();
     executeCurrentAction();
+    pollSensors();
+    sendReadings();
 }
 
 // --- Poll sensors ---
@@ -391,26 +391,26 @@ bool Origin::receiveIncoming() {
     int len = readLine(buf, sizeof(buf));
     if (len <= 0) return false;
 
-    Serial.print("[origin] rx: ");
+    Serial.print("rx: ");
     Serial.println(buf);
 
     const char* typeEnd;
     const char* typeVal = findJsonStringValue(buf, "type", &typeEnd);
     if (!typeVal) {
-        Serial.println("[origin] no type field found");
+        Serial.println("ntff");
         return false;
     }
 
     // Handle discover: respond with announce
     if (strncmp(typeVal, "discover", 8) == 0) {
-        Serial.println("[origin] discover received (in tick), sending announce");
+        Serial.println("dr-sa");
         sendAnnounce();
         return true;
     }
 
     // Handle action
     if (strncmp(typeVal, "action", 6) != 0) {
-        Serial.print("[origin] unknown message type: ");
+        Serial.print("ut");
         // Print just the type value
         char typeStr[32];
         int ti = 0;
@@ -420,7 +420,7 @@ bool Origin::receiveIncoming() {
         return false;
     }
 
-    Serial.println("[origin] action received");
+    Serial.println("ar");
 
     // Extract action name
     const char* nameEnd;
@@ -432,7 +432,7 @@ bool Origin::receiveIncoming() {
     strncpy(currentAction, nameVal, nameLen);
     currentAction[nameLen] = '\0';
 
-    Serial.print("[origin] action: ");
+    Serial.print("ac");
     Serial.println(currentAction);
 
     // Extract params
@@ -483,7 +483,7 @@ void Origin::executeCurrentAction() {
             return;
         }
     }
-    Serial.print("[origin] unknown action: ");
+    Serial.print("ua");
     Serial.println(currentAction);
 }
 

@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(curl -s http://localhost:5050/devices/toy-car/action -X POST -H \"Content-Type: application/json\" -d '{\"\"name\"\":\"\"moveFwd\"\",\"\"params\"\":{\"\"speed\"\":200}}')",
+      "Bash(curl -s http://localhost:5050/devices)",
+      "Bash(curl -s http://localhost:5050/devices/toy-car/actions -X POST -H \"Content-Type: application/json\" -d '{\"\"name\"\":\"\"moveFwd\"\",\"\"params\"\":{\"\"speed\"\":200}}')",
+      "Bash(curl -s http://localhost:5050/devices/toy-car/state)"
+    ]
+  }
+}

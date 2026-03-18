@@ -1,20 +1,17 @@
-#include <SoftwareSerial.h>
 #include "origin.h"
 #include "transports/bluetooth_transport.h"
 
-// SoftwareSerial MUST be declared in the .ino file.
-// HC-05 TX -> A4 (RX), HC-05 RX -> A5 (TX)
-SoftwareSerial BTserial(A4, A5);
-
 Origin origin;
 
-// Motor pins (no timer conflicts)
-const int ENA = 11;   // Left speed  (Timer2)
-const int IN1 = 8;    // Left fwd
-const int IN2 = 4;    // Left bwd
-const int ENB = 6;    // Right speed (Timer0)
-const int IN3 = 7;    // Right fwd
-const int IN4 = 10;   // Right bwd
+// L298N Motor Driver pins (Arduino Mega)
+// Motor A (Left)
+const int ENA = 5;
+const int IN1 = 2;
+const int IN2 = 4;
+// Motor B (Right)
+const int IN3 = 7;
+const int IN4 = 8;
+const int ENB = 6;
 
 const int TRIG_PIN = A1;
 const int ECHO_PIN = A0;
@@ -73,36 +70,58 @@ void setMotors(int leftDir, int rightDir, int speed) {
     analogWrite(ENB, s);
 }
 
+// --- State tracking ---
+
+int currentSpeed = 0;
+int currentAngle = 0;
+
+void readMotorState(Readings& readings) {
+    readings.set("speed", (float)currentSpeed);
+    readings.set("angle", (float)currentAngle);
+}
+
 // --- Action functions ---
 
 void moveFwd(Params params) {
     int speed = (int)params.get("speed", 200);
+    currentSpeed = speed;
+    currentAngle = 0;
     setMotors(1, 1, speed);
 }
 
 void moveBkwd(Params params) {
     int speed = (int)params.get("speed", 200);
+    currentSpeed = speed;
+    currentAngle = 180;
     setMotors(-1, -1, speed);
 }
 
 void moveRight(Params params) {
     int speed = (int)params.get("speed", 200);
     int angle = (int)params.get("angle", 90);
+    currentSpeed = speed;
+    currentAngle = angle;
     setMotors(1, -1, speed);
     delay(angle * 8);
     stopMotors();
+    currentSpeed = 0;
 }
 
 void moveLeft(Params params) {
     int speed = (int)params.get("speed", 200);
     int angle = (int)params.get("angle", 90);
+    currentSpeed = speed;
+    currentAngle = -angle;
     setMotors(-1, 1, speed);
     delay(angle * 8);
     stopMotors();
+    currentSpeed = 0;
 }
 
 void stop(Params params) {
     stopMotors();
+    currentSpeed = 0;
+    currentAngle = 0;
 }
 
 // --- Setup ---
@@ -120,10 +139,11 @@ void setup() {
     Serial.begin(9600);
 
     origin.setDeviceId("toy-car");
-    origin.setTransport(new BluetoothTransport(BTserial, 9600));
+    origin.setTransport(new BluetoothTransport(Serial1, 9600));
 
     // Register hardware with pins
     origin.registerSensor("ultrasonic", ultrasonicPins, 2, readDistance);
+    origin.registerSensor("motor-state", nullptr, 0, readMotorState);
     origin.registerChip("h-bridge", motorPins, 6);
 
     // Register actions

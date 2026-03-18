@@ -15,9 +15,7 @@ export class SerialServerTransport implements ServerTransport {
   ) {}
 
   async open(): Promise<void> {
-    // Dynamic import to avoid issues if serialport isn't installed
-    const { SerialPort } = await import("serialport");
-    const { ReadlineParser } = await import("@serialport/parser-readline");
+    const { SerialPort, ReadlineParser } = await import("serialport");
 
     return new Promise((resolve, reject) => {
       this.port = new SerialPort(
@@ -31,17 +29,21 @@ export class SerialServerTransport implements ServerTransport {
 
           this.parser.on("data", (line: string) => {
             const trimmed = line.trim();
-            if (trimmed && this.dataCallback) {
-              this.dataCallback(trimmed);
+            if (trimmed) {
+              console.log(`[transport] ${this.path} rx: ${trimmed}`);
+              if (this.dataCallback) {
+                this.dataCallback(trimmed);
+              }
             }
           });
 
           this.port.on("close", () => {
+            console.log(`[transport] ${this.path} port closed`);
             if (this.closeCallback) this.closeCallback();
           });
 
           this.port.on("error", (err: Error) => {
-            console.error(`[transport] Serial error on ${this.path}:`, err.message);
+            console.error(`[transport] ${this.path} error:`, err.message);
           });
 
           // Wait briefly for Arduino reset after serial open
@@ -55,7 +57,7 @@ export class SerialServerTransport implements ServerTransport {
     if (!this.port) return;
     return new Promise((resolve) => {
       this.port.close((err: Error | null) => {
-        if (err) console.error("[transport] Error closing port:", err.message);
+        if (err) console.error(`[transport] ${this.path} close error:`, err.message);
         this.port = null;
         this.parser = null;
         resolve();
@@ -64,7 +66,11 @@ export class SerialServerTransport implements ServerTransport {
   }
 
   write(data: string): void {
-    if (!this.port || !this.port.isOpen) return;
+    if (!this.port || !this.port.isOpen) {
+      console.warn(`[transport] ${this.path} tx DROPPED (port not open): ${data}`);
+      return;
+    }
+    console.log(`[transport] ${this.path} tx: ${data}`);
     this.port.write(data + "\n");
   }
 

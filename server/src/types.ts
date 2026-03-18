@@ -14,6 +14,10 @@ export interface AckMessage {
   type: "ack";
 }
 
+export interface DiscoverMessage {
+  type: "discover";
+}
+
 export interface ReadingsMessage {
   type: "readings";
   data: Record<string, number>;
@@ -26,7 +30,7 @@ export interface ActionMessage {
 }
 
 export type FirmwareMessage = AnnounceMessage | ReadingsMessage;
-export type ServerToFirmwareMessage = AckMessage | ActionMessage;
+export type ServerToFirmwareMessage = AckMessage | DiscoverMessage | ActionMessage;
 
 // --- Device model ---
 
@@ -100,6 +104,29 @@ export interface SSEEvent {
   timestamp: string;
 }
 
+// --- Storage adapter ---
+
+export interface StoredDevice {
+  manifest: DeviceManifest;
+  state: Record<string, number>;
+  connectedAt: string;
+  lastUpdated: string | null;
+}
+
+export interface StorageAdapter {
+  // Device state
+  getDevice(id: string): Promise<StoredDevice | null>;
+  setDevice(id: string, device: StoredDevice): Promise<void>;
+  removeDevice(id: string): Promise<void>;
+  listDevices(): Promise<StoredDevice[]>;
+
+  // Webhooks
+  getWebhook(id: string): Promise<Webhook | null>;
+  setWebhook(id: string, webhook: Webhook): Promise<void>;
+  removeWebhook(id: string): Promise<void>;
+  listWebhooks(): Promise<Webhook[]>;
+}
+
 // --- Config file (config.ts in cwd) ---
 
 export interface OriginConfig {
@@ -109,11 +136,11 @@ export interface OriginConfig {
   baudRate?: number;
   token?: string;
   webhooks?: WebhookRegistration[];
+  storage?: StorageAdapter;
 }
 
 export function defineConfig(config: OriginConfig = {}): OriginConfig {
   return {
-    bluetooth: "/dev/tty.HC-05",
     port: 3000,
     baudRate: 9600,
     ...config,

@@ -8,8 +8,8 @@ import { SSEManager } from "./sse.js";
 import { WebhookManager } from "./webhooks.js";
 import { createOriginServer } from "./server.js";
 import { createAuthMiddleware } from "./auth.js";
-import { SerialServerTransport, BluetoothServerTransport } from "./transport.js";
-import type { SSEEvent, ServerTransport, OriginConfig } from "./types.js";
+import { MemoryStorageAdapter } from "./storage.js";
+import type { SSEEvent, OriginConfig } from "./types.js";
 
 // --- CLI argument parsing ---
 
@@ -173,17 +173,11 @@ async function main() {
     token: cliConfig.token ?? fileConfig?.token ?? null,
   };
 
-  if (config.serial.length === 0 && config.bluetooth.length === 0) {
-    console.error("Error: At least one --serial or --bluetooth device path is required.");
-    console.error("       Provide via CLI flags, config.json (--config), or config.ts in the cwd.");
-    printHelp();
-    process.exit(1);
-  }
-
   // Create managers
-  const deviceManager = new DeviceManager();
+  const storage = fileConfig?.storage ?? new MemoryStorageAdapter();
+  const deviceManager = new DeviceManager(storage);
   const sseManager = new SSEManager();
-  const webhookManager = new WebhookManager();
+  const webhookManager = new WebhookManager(storage);
   const authCheck = createAuthMiddleware(config.token);
 
   // Wire up SSE and webhooks to device events
@@ -203,45 +197,25 @@ async function main() {
     authCheck,
   });
 
-  // Connect transports
-  const transports: ServerTransport[] = [];
-
+  // Register and open all configured ports (persistent listeners)
+  const portPromises: Promise<void>[] = [];
   for (const path of config.serial) {
-    console.log(`[init] Connecting serial: ${path} @ ${config.baudRate} baud`);
-    const transport = new SerialServerTransport(path, config.baudRate);
-    transports.push(transport);
+    portPromises.push(deviceManager.addPort({ type: "serial", path, baudRate: config.baudRate }));
   }
-
   for (const path of config.bluetooth) {
-    console.log(`[init] Connecting bluetooth: ${path} @ ${config.baudRate} baud`);
-    const transport = new BluetoothServerTransport(path, config.baudRate);
-    transports.push(transport);
+    portPromises.push(deviceManager.addPort({ type: "bluetooth", path, baudRate: config.baudRate }));
   }
+  await Promise.allSettled(portPromises);
 
-  // Add transports and wait for handshake
-  const connectPromises = transports.map(async (transport) => {
-    try {
-      const deviceId = await deviceManager.addTransport(transport);
-      console.log(`[init] Device connected: ${deviceId}`);
-    } catch (err) {
-      const message = err instanceof Error ? err.message : String(err);
-      console.error(`[init] Failed to connect transport: ${message}`);
-    }
-  });
-
-  // Start HTTP server immediately (devices connect in the background)
+  // Start HTTP server
   server.listen(config.port, () => {
     console.log(`[server] Origin server listening on http://localhost:${config.port}`);
     if (config.token) {
       console.log("[server] Auth enabled — requests require Bearer token");
     }
+    console.log(`[server] Ports: ${deviceManager.getPortStatuses().map((p) => `${p.path} (${p.status})`).join(", ") || "none"}`);
+    console.log(`[server] Call POST /discover to query devices`);
   });
-
-  // Wait for all devices
-  await Promise.allSettled(connectPromises);
-
-  const deviceCount = deviceManager.getDeviceIds().length;
-  console.log(`[init] ${deviceCount} device(s) connected`);
 
   // Graceful shutdown
   async function shutdown() {
