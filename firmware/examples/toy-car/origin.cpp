@@ -480,6 +480,7 @@ void Origin::executeCurrentAction() {
     for (int i = 0; i < actionCount; i++) {
         if (strcmp(actions[i].name, currentAction) == 0) {
             actions[i].fn(currentParams);
+            currentAction[0] = '\0';
             return;
         }
     }

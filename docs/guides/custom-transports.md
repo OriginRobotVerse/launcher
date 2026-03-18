@@ -10,7 +10,7 @@ Both sides exchange **newline-delimited JSON strings**. One message per line.
 
 Messages are typed via a `"type"` field:
 - Firmware sends: `announce`, `readings`
-- Server sends: `ack`, `action`
+- Server sends: `ack`, `action`, `discover`
 
 ---
 
@@ -90,15 +90,15 @@ class MyTransport : public Transport {
 
 ### Half-Duplex Considerations
 
-If your transport is half-duplex (like HC-05 Bluetooth):
+The built-in BluetoothTransport uses HardwareSerial (full duplex), so it no longer flushes RX before TX. However, if your custom transport uses SoftwareSerial or other half-duplex hardware, you should still follow this pattern:
 
 1. Read first: check for incoming data before sending
 2. Flush RX before TX: discard any stale bytes in the receive buffer
-3. The tick loop naturally follows this pattern: receiveAction runs before sendReadings in the next tick
+3. The tick loop now runs receiveIncoming first, then sendReadings — incoming messages are always processed before any TX occurs
 
 ```cpp
 void send(const char* data) override {
-    while (myHardware.available()) myHardware.read();  // flush RX
+    while (myHardware.available()) myHardware.read();  // flush RX (half-duplex only)
     myHardware.println(data);
 }
 ```
@@ -259,7 +259,7 @@ Flash your Arduino with a basic sketch. Start the server with your transport. Yo
 Use curl or a client to send an action:
 
 ```bash
-curl -X POST http://localhost:3000/devices/my-device/actions \
+curl -X POST http://localhost:5050/devices/my-device/actions \
   -H "Content-Type: application/json" \
   -d '{"name":"stop"}'
 ```

@@ -10,14 +10,14 @@ Origin apps are programs that control Arduino devices through the Origin server'
 
 ```bash
 cd clients/typescript
-npm install
-npm run build
+pnpm install
+pnpm run build
 ```
 
 ```ts
 import { OriginClient } from "@aorigin/client";
 
-const client = new OriginClient({ url: "http://localhost:3000" });
+const client = new OriginClient({ url: "http://localhost:5050" });
 ```
 
 ### Python Client
@@ -30,17 +30,17 @@ pip install -e .
 ```python
 from origin_client import OriginClient
 
-client = OriginClient("http://localhost:3000")
+client = OriginClient("http://localhost:5050")
 ```
 
 If the server has auth enabled:
 
 ```ts
-const client = new OriginClient({ url: "http://localhost:3000", token: "my-secret" });
+const client = new OriginClient({ url: "http://localhost:5050", token: "my-secret" });
 ```
 
 ```python
-client = OriginClient("http://localhost:3000", token="my-secret")
+client = OriginClient("http://localhost:5050", token="my-secret")
 ```
 
 ---
@@ -88,17 +88,17 @@ print(f"Distance: {state['distance']}")
 
 **TypeScript:**
 ```ts
-await client.sendAction("toy-car", "moveFwd", { speed: 200 });
+await client.sendAction("toy-car", "moveFwd", { speed: 255 });
 await client.sendAction("toy-car", "stop");
 ```
 
 **Python:**
 ```python
-client.send_action("toy-car", "moveFwd", {"speed": 200})
+client.send_action("toy-car", "moveFwd", {"speed": 255})
 client.send_action("toy-car", "stop")
 ```
 
-Actions persist on the device until a new action is sent. You do not need to repeatedly send the same action.
+Actions execute once on the device. For continuous motion, the action sets hardware state (motor pins) that persists independently. You do not need to repeatedly send the same action.
 
 ---
 
@@ -118,9 +118,9 @@ async function run() {
         const distance = state.distance ?? 999;
 
         if (distance < 10) {
-            await client.sendAction(deviceId, "moveBkwd", { speed: 200 });
+            await client.sendAction(deviceId, "moveRight", { speed: 255, angle: 90 });
         } else {
-            await client.sendAction(deviceId, "moveFwd", { speed: 200 });
+            await client.sendAction(deviceId, "moveFwd", { speed: 255 });
         }
 
         await new Promise(r => setTimeout(r, 200));
@@ -139,9 +139,9 @@ while True:
     distance = state.get("distance", 999)
 
     if distance < 10:
-        client.send_action(device_id, "moveBkwd", {"speed": 200})
+        client.send_action(device_id, "moveRight", {"speed": 255, "angle": 90})
     else:
-        client.send_action(device_id, "moveFwd", {"speed": 200})
+        client.send_action(device_id, "moveFwd", {"speed": 255})
 
     time.sleep(0.2)
 ```
@@ -194,12 +194,12 @@ setInterval(async () => {
 
     switch (mode) {
         case "scanning":
-            await client.sendAction("toy-car", "moveFwd", { speed: 200 });
+            await client.sendAction("toy-car", "moveFwd", { speed: 255 });
             if (distance < 15) mode = "avoiding";
             break;
 
         case "avoiding":
-            await client.sendAction("toy-car", "moveRight", { speed: 150 });
+            await client.sendAction("toy-car", "moveRight", { speed: 255 });
             if (distance > 30) mode = "scanning";
             break;
 
@@ -273,6 +273,6 @@ The `examples/` directory contains complete working programs:
 
 Run them:
 ```bash
-npx tsx examples/obstacle-avoider.ts http://localhost:3000 toy-car
-python examples/gesture-controller.py http://localhost:3000 toy-car
+npx tsx examples/obstacle-avoider.ts http://localhost:5050 toy-car
+python examples/gesture-controller.py http://localhost:5050 toy-car
 ```

@@ -15,11 +15,9 @@ No external dependencies. v0.2 does not use ArduinoJson -- JSON serialization is
 ## Quick Start
 
 ```cpp
-#include <SoftwareSerial.h>
 #include "origin.h"
 #include "transports/bluetooth_transport.h"
 
-SoftwareSerial BTserial(A4, A5);  // Must be in .ino file
 Origin origin;
 
 int tempPins[] = {A0};
@@ -38,7 +36,7 @@ void fanOff(Params params) {
 
 void setup() {
     origin.setDeviceId("weather-station");
-    origin.setTransport(new BluetoothTransport(BTserial, 9600));
+    origin.setTransport(new BluetoothTransport(Serial1, 9600));
     origin.registerSensor("thermistor", tempPins, 1, readTemp);
     origin.registerAction("fanOn", fanOn);
     origin.registerAction("fanOff", fanOff);
@@ -62,7 +60,7 @@ void loop() {
 | `registerAction(name, fn)` | Register a named action the server can trigger |
 | `defineState(key, type)` | Define a state schema entry (ORIGIN_FLOAT/INT/BOOL/STRING) |
 | `handshake()` | Send announce, wait for ack (blocks, retries indefinitely) |
-| `tick()` | Run one cycle: poll sensors, send readings, receive action, execute |
+| `tick()` | Run one cycle: receive incoming, execute action, poll sensors, send readings. Actions execute once and are cleared. |
 
 ## Wire Protocol (v0.2)
 
@@ -74,7 +72,7 @@ JSON over newline-delimited text:
 
 **Firmware receives:**
 - `{"type":"ack"}`
-- `{"type":"action","name":"moveFwd","params":{"speed":200}}`
+- `{"type":"action","name":"moveFwd","params":{"speed":255}}`
 
 ## Data Types
 
@@ -86,11 +84,9 @@ JSON over newline-delimited text:
 ## Transports
 
 - `SerialTransport(baudRate)` -- USB Serial (development)
-- `BluetoothTransport(softwareSerial, baudRate)` -- HC-05/06 via SoftwareSerial
+- `BluetoothTransport(hardwareSerial, baudRate)` -- HC-05/06 via HardwareSerial (e.g. Serial1 on Arduino Mega)
 
-Both use line-buffered accumulation. BluetoothTransport flushes RX before TX (half-duplex).
-
-**SoftwareSerial must be declared in the .ino file** to avoid static initialization order issues.
+Both use line-buffered accumulation. BluetoothTransport uses full-duplex communication via HardwareSerial.
 
 ## Compile-Time Limits
 
@@ -109,6 +105,6 @@ JSON buffers: announce=1024, readings=512, actions=256 bytes.
 
 ## Example
 
-See `examples/toy-car/` for a complete reference with ultrasonic sensor, H-bridge motors, and five actions.
+See `examples/toy-car/` for a complete reference with ultrasonic sensor, H-bridge motors, and four actions (moveFwd, moveRight, moveLeft, stop).
 
 Full documentation: `docs/guides/writing-firmware.md`

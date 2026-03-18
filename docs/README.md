@@ -29,11 +29,9 @@ Your App (TS/Python)          Origin Server              Arduino
 ### 1. Flash firmware onto your Arduino
 
 ```cpp
-#include <SoftwareSerial.h>
 #include "origin.h"
 #include "transports/bluetooth_transport.h"
 
-SoftwareSerial BTserial(10, 11);
 Origin origin;
 
 int tempPins[] = {A0};
@@ -53,7 +51,7 @@ void fanOff(Params params) {
 
 void setup() {
     origin.setDeviceId("weather-station");
-    origin.setTransport(new BluetoothTransport(BTserial, 9600));
+    origin.setTransport(new BluetoothTransport(Serial1, 9600));
     origin.registerSensor("thermistor", tempPins, 1, readTemp);
     origin.registerAction("fanOn", fanOn);
     origin.registerAction("fanOff", fanOff);
@@ -70,9 +68,9 @@ void loop() {
 
 ```bash
 cd server
-npm install
-npm run build
-node dist/index.js --serial /dev/ttyUSB0
+pnpm install
+pnpm run build
+node dist/index.js --bluetooth /dev/ttyUSB0
 ```
 
 ### 3. Write an app
@@ -81,11 +79,11 @@ node dist/index.js --serial /dev/ttyUSB0
 ```ts
 import { OriginClient } from "@aorigin/client";
 
-const client = new OriginClient({ url: "http://localhost:3000" });
+const client = new OriginClient({ url: "http://localhost:5050" });
 const state = await client.getDeviceState("weather-station");
 
 if (state.temperature > 30) {
-    await client.sendAction("weather-station", "fanOn", { speed: 200 });
+    await client.sendAction("weather-station", "fanOn", { speed: 255 });
 }
 ```
 
@@ -93,11 +91,11 @@ if (state.temperature > 30) {
 ```python
 from origin_client import OriginClient
 
-client = OriginClient("http://localhost:3000")
+client = OriginClient("http://localhost:5050")
 state = client.get_device_state("weather-station")
 
 if state["temperature"] > 30:
-    client.send_action("weather-station", "fanOn", {"speed": 200})
+    client.send_action("weather-station", "fanOn", {"speed": 255})
 ```
 
 ---
@@ -114,7 +112,7 @@ origin/
         serial_transport.h        USB Serial
         bluetooth_transport.h     HC-05/06 Bluetooth
     examples/
-      toy-car/                    Reference project
+      toy-car/                    Reference project — four actions (moveFwd, moveRight, moveLeft, stop)
 
   server/                       TypeScript HTTP server
     src/
@@ -136,7 +134,7 @@ origin/
         sse.py                    SSESubscription
         models.py                 Dataclasses
 
-  examples/
+  apps/                         Example client apps
     obstacle-avoider.ts           Polling-based navigation
     state-monitor.ts              SSE real-time display
     gesture-controller.py         Simulated ML gestures
@@ -158,6 +156,8 @@ origin/
 | GET | `/events` | SSE stream for all devices |
 | POST | `/webhooks` | Register webhook `{"url": "...", "events": [...]}` |
 | GET | `/webhooks` | List registered webhooks |
+| POST | `/discover` | Trigger device discovery on all ports |
+| GET | `/ports` | List available serial/BT ports |
 | DELETE | `/webhooks/:id` | Remove a webhook |
 
 ### SSE Event Types
@@ -182,15 +182,17 @@ JSON over newline-delimited text. The server and firmware exchange typed message
 **Server -> Firmware:**
 ```json
 {"type":"ack"}
-{"type":"action","name":"moveFwd","params":{"speed":200}}
+{"type":"discover"}
+{"type":"action","name":"moveFwd","params":{"speed":255}}
 ```
 
 ### Handshake Flow
 
-1. Firmware sends `announce` message with full device manifest
-2. Server parses manifest, registers device, sends `ack`
-3. Firmware begins normal tick loop (poll sensors, send readings, receive actions)
-4. If no ack within 5 seconds, firmware retries announce indefinitely
+1. Server sends `{"type":"discover"}` to the port
+2. Firmware receives discover, sends `announce` message with full device manifest
+3. Server parses manifest, registers device, sends `ack`
+4. Firmware receives ack, begins normal tick loop (poll sensors, send readings, receive actions)
+5. If no ack within 5 seconds, firmware waits for next discover
 
 ---
 
