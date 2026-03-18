@@ -29,15 +29,15 @@ setup()
 
 loop()
   origin.tick()
-    1. pollSensors()           call each sensor readFn, update Readings
-    2. sendReadings()          serialize to {"type":"readings","data":{...}}, send
-    3. receiveAction()         non-blocking check for {"type":"action",...}
-    4. executeCurrentAction()  call the current action fn (persists until overridden)
+    1. receiveIncoming()       non-blocking check for incoming messages
+    2. executeCurrentAction()  call the action fn if one is pending
+    3. pollSensors()           call each sensor readFn, update Readings
+    4. sendReadings()          serialize to JSON, send
 ```
 
 The tick loop runs as fast as the Arduino can execute -- typically hundreds to thousands of iterations per second. Sensor read functions are called every tick, so readings are always fresh.
 
-Actions persist: when the server sends `moveFwd`, the firmware keeps calling `moveFwd()` on every tick until a different action arrives. This means motors keep running, LEDs stay on, etc.
+Actions execute once: when the server sends `moveFwd`, the firmware calls `moveFwd()` once and clears it. For continuous motion (motors), the action function sets hardware state that persists independently of the action system.
 
 ### 2. Server Event Loop (Node.js)
 
@@ -113,7 +113,7 @@ Client                      Server                      Arduino
 
 POST /devices/:id/actions
   {"name":"moveFwd",
-   "params":{"speed":200}}
+   "params":{"speed":255}}
        |
                             validate action name
                             serialize to wire format
@@ -131,21 +131,23 @@ POST /devices/:id/actions
 ### Handshake
 
 ```
-Arduino                     Server
-───────                     ──────
+Server                      Arduino
+──────                      ───────
 
-sendAnnounce() -----------> transport.onData()
-{"type":"announce",           parse announce message
- "id":"toy-car",              create device entry
- "version":"0.2",             store manifest
- "sensors":[...],
- "chips":[...],               send ack:
- "actions":[...],             {"type":"ack"}
- "state":[...]}           <--
-                                emit "device.connected"
-waitForAck() receives ack
-handshakeComplete = true
-tick() now runs normally
+(port opens)
+send discover:
+{"type":"discover"}  ------>
+                             receives discover
+                             sendAnnounce()
+                      <----- {"type":"announce",...}
+parse announce message
+create device entry
+store manifest
+send ack:
+{"type":"ack"}       ------>
+                             waitForAck() receives ack
+                             handshakeComplete = true
+emit "device.connected"     tick() now runs normally
 ```
 
 If the server does not respond within 5 seconds, the firmware retries the announce. It retries indefinitely until ack is received.

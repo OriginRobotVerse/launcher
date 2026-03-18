@@ -115,7 +115,7 @@ void moveFwd(Params params) {
 origin.registerAction("moveFwd", moveFwd);
 ```
 
-**Actions persist.** When the server sends `moveFwd`, the firmware keeps calling `moveFwd(currentParams)` on every tick until a different action arrives.
+**Actions execute once and are cleared.** When the server sends `moveFwd`, the firmware calls `moveFwd(currentParams)` a single time and then clears the pending action. The hardware state set by the action (e.g. motor pins driven HIGH) persists until another action changes it, but the action function itself does not re-execute.
 
 **Action function signature:** `void fn(Params params)`
 
@@ -153,20 +153,15 @@ origin.setTransport(new SerialTransport(9600));
 ### Bluetooth (HC-05/HC-06)
 
 ```cpp
-#include <SoftwareSerial.h>
 #include "transports/bluetooth_transport.h"
 
-// MUST be declared in the .ino file, not in library code
-SoftwareSerial BTserial(10, 11);
-
 void setup() {
-    origin.setTransport(new BluetoothTransport(BTserial, 9600));
+    // HC-05 on Arduino Mega: Serial1 (RX1=pin19, TX1=pin18)
+    origin.setTransport(new BluetoothTransport(Serial1, 9600));
 }
 ```
 
-`SoftwareSerial` must be declared in the `.ino` file to avoid static initialization order issues.
-
-**Half-duplex constraints:** The `BluetoothTransport` flushes the RX buffer before transmitting. It uses line-buffered accumulation for incoming data, since characters arrive slowly at 9600 baud.
+`BluetoothTransport` takes a `HardwareSerial&` reference (e.g. `Serial1` on Arduino Mega). No need for SoftwareSerial.
 
 ---
 
@@ -181,7 +176,7 @@ void setup() {
 }
 ```
 
-`handshake()` sends an announce message with the full device manifest (ID, version, sensors, chips, actions, state schema). It then waits up to 5 seconds for an `{"type":"ack"}` response. If no ack arrives, it retries indefinitely.
+The server initiates discovery by sending `{"type":"discover"}` to the port. `handshake()` waits for a discover message, then sends an announce message with the full device manifest (ID, version, sensors, chips, actions, state schema). It then waits up to 5 seconds for an `{"type":"ack"}` response. If no ack arrives, it waits for the next discover message and tries again.
 
 The announce message looks like:
 ```json
@@ -191,7 +186,7 @@ The announce message looks like:
   "version": "0.2",
   "sensors": [{"name": "ultrasonic", "pins": [7, 8]}],
   "chips": [{"name": "h-bridge", "pins": [2, 3, 4, 5]}],
-  "actions": ["moveFwd", "moveBkwd", "stop"],
+  "actions": ["moveFwd", "moveRight", "moveLeft", "stop"],
   "state": [{"key": "distance", "type": "float"}, {"key": "speed", "type": "int"}]
 }
 ```
@@ -209,10 +204,10 @@ void loop() {
 ```
 
 `tick()` does four things:
-1. **pollSensors()** -- calls each sensor read function, updating `Readings`
-2. **sendReadings()** -- serializes to `{"type":"readings","data":{...}}` and sends
-3. **receiveAction()** -- non-blocking check for incoming `{"type":"action",...}`
-4. **executeCurrentAction()** -- calls the current action function
+1. **receiveIncoming()** -- non-blocking check for incoming messages
+2. **executeCurrentAction()** -- calls the action function if one is pending, then clears it
+3. **pollSensors()** -- calls each sensor read function, updating `Readings`
+4. **sendReadings()** -- serializes to `{"type":"readings","data":{...}}` and sends
 
 If `handshake()` has not completed, `tick()` does nothing.
 
@@ -240,7 +235,7 @@ JSON buffer sizes (not overridable via define, but editable in source):
 
 ## Complete Example
 
-See `firmware/examples/toy-car/toy-car.ino` for a full reference project with an ultrasonic sensor, H-bridge motor driver, and five actions (moveFwd, moveBkwd, moveLeft, moveRight, stop).
+See `firmware/examples/toy-car/toy-car.ino` for a full reference project with an ultrasonic sensor, H-bridge motor driver, and four actions (moveFwd, moveLeft, moveRight, stop).
 
 ---
 

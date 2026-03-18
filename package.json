@@ -1,0 +1,10 @@
+{
+  "private": true,
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "@serialport/bindings-cpp",
+      "better-sqlite3",
+      "esbuild"
+    ]
+  }
+}
