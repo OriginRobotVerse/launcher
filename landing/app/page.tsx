@@ -231,9 +231,7 @@ export default function LandingPage() {
           <div className="reveal">
             <div className="section-label">01 — What</div>
             <h2 className="section-title">
-              The zero point between
-              <br />
-              hardware and code
+              Control anything
             </h2>
             <p className="section-desc">
               Every robot, every microcontroller, every physical device follows
@@ -572,7 +570,7 @@ export default function LandingPage() {
           <span>origin</span>
         </div>
         <div className="footer-right">
-          The zero point between hardware and code.
+          Control anything.
         </div>
       </footer>
     </>

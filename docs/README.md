@@ -118,12 +118,20 @@ origin/
     src/
       types.ts                    Wire protocol + API types
       transport.ts                Serial/BT server transports
+      transport-tcp.ts            TCP transport (simulators)
       device-manager.ts           Device lifecycle + state tracking
       sse.ts                      Server-sent events
       webhooks.ts                 Webhook dispatch with HMAC
       auth.ts                     Optional bearer token auth
       server.ts                   HTTP router
       index.ts                    CLI entry point
+
+  simulators/
+    mujoco/                     MuJoCo physics simulation bridge
+      __main__.py                 CLI entry point
+      origin_bridge.py            TCP client (wire protocol)
+      sim_runner.py               Physics loop + viewer
+      manifest_builder.py         MJCF → Origin manifest
 
   clients/
     typescript/                 Zero-dep TS client
@@ -201,4 +209,5 @@ JSON over newline-delimited text. The server and firmware exchange typed message
 - **[Writing Firmware](guides/writing-firmware.md)** -- register sensors, chips, actions, and state
 - **[Writing Apps](guides/writing-apps.md)** -- use the TS or Python client to control devices
 - **[Custom Transports](guides/custom-transports.md)** -- implement your own transport adapter
+- **[MuJoCo Simulation](guides/mujoco-simulation.md)** -- control simulated robots with MuJoCo
 - **[Architecture](architecture.md)** -- deep dive into the system design

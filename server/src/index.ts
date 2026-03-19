@@ -16,6 +16,7 @@ import type { SSEEvent, OriginConfig } from "./types.js";
 interface Config {
   serial: string[];
   bluetooth: string[];
+  tcp: number[];
   port: number;
   baudRate: number;
   token: string | null;
@@ -25,6 +26,7 @@ function parseArgs(args: string[]): Config {
   const config: Config = {
     serial: [],
     bluetooth: [],
+    tcp: [],
     port: 3000,
     baudRate: 9600,
     token: null,
@@ -50,6 +52,9 @@ function parseArgs(args: string[]): Config {
       case "--baud":
         if (next) { config.baudRate = parseInt(next, 10); i++; }
         break;
+      case "--tcp":
+        if (next) { config.tcp.push(parseInt(next, 10)); i++; }
+        break;
       case "--token":
       case "-t":
         if (next) { config.token = next; i++; }
@@ -62,6 +67,7 @@ function parseArgs(args: string[]): Config {
             const fileConfig = JSON.parse(readFileSync(configPath, "utf-8"));
             if (fileConfig.serial) config.serial.push(...(Array.isArray(fileConfig.serial) ? fileConfig.serial : [fileConfig.serial]));
             if (fileConfig.bluetooth) config.bluetooth.push(...(Array.isArray(fileConfig.bluetooth) ? fileConfig.bluetooth : [fileConfig.bluetooth]));
+            if (fileConfig.tcp) config.tcp.push(...(Array.isArray(fileConfig.tcp) ? fileConfig.tcp : [fileConfig.tcp]));
             if (fileConfig.port) config.port = fileConfig.port;
             if (fileConfig.baudRate) config.baudRate = fileConfig.baudRate;
             if (fileConfig.token) config.token = fileConfig.token;
@@ -101,6 +107,7 @@ Options:
   --bluetooth, -b <path>  Bluetooth serial path (can repeat)
   --port, -p <number>     HTTP port (default: 3000)
   --baud <number>         Baud rate (default: 9600)
+  --tcp <port>            TCP port for simulator connections (can repeat)
   --token, -t <string>    Bearer token for API auth (optional)
   --config, -c <path>     Load config from JSON file
   --help, -h              Show this help
@@ -165,9 +172,14 @@ async function main() {
   const fileConfig = await loadConfigFile();
   const cliConfig = parseArgs(process.argv.slice(2));
 
+  const fileTcp = fileConfig?.tcp
+    ? (Array.isArray(fileConfig.tcp) ? fileConfig.tcp : [fileConfig.tcp])
+    : [];
+
   const config: Config = {
     serial: cliConfig.serial.length > 0 ? cliConfig.serial : toArray(fileConfig?.serial),
     bluetooth: cliConfig.bluetooth.length > 0 ? cliConfig.bluetooth : toArray(fileConfig?.bluetooth),
+    tcp: cliConfig.tcp.length > 0 ? cliConfig.tcp : fileTcp,
     port: cliConfig.port !== 3000 ? cliConfig.port : (fileConfig?.port ?? 3000),
     baudRate: cliConfig.baudRate !== 9600 ? cliConfig.baudRate : (fileConfig?.baudRate ?? 9600),
     token: cliConfig.token ?? fileConfig?.token ?? null,
@@ -206,6 +218,11 @@ async function main() {
     portPromises.push(deviceManager.addPort({ type: "bluetooth", path, baudRate: config.baudRate }));
   }
   await Promise.allSettled(portPromises);
+
+  // Start TCP listeners for simulator connections
+  for (const tcpPort of config.tcp) {
+    deviceManager.addTcpListener(tcpPort);
+  }
 
   // Start HTTP server
   server.listen(config.port, () => {

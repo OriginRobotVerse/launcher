@@ -132,6 +132,7 @@ export interface StorageAdapter {
 export interface OriginConfig {
   serial?: string | string[];
   bluetooth?: string | string[];
+  tcp?: number | number[];
   port?: number;
   baudRate?: number;
   token?: string;

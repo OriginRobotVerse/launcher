@@ -9,28 +9,28 @@ const jetbrainsMono = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Origin — The zero point between hardware and code",
+  title: "Origin — Control anything",
   description:
-    "Origin is the runtime that sits between your TypeScript and any physical device. Flash the firmware once. Write apps forever.",
+    "Origin is the runtime that sits between your code and any physical device. Flash the firmware once. Write apps forever.",
   openGraph: {
-    title: "Origin — The zero point between hardware and code",
+    title: "Origin — Control anything",
     description:
-      "TypeScript runtime for Arduinos, robots, and physical devices. Flash the firmware once. Write apps forever.",
+      "A runtime for Arduinos, Unitrees, Humanoid robots and physical devices. Flash the firmware once. Write apps forever.",
     images: [
       {
         url: "/og-image.png",
         width: 1168,
         height: 601,
-        alt: "Origin — Write code. Control anything.",
+        alt: "Origin — Control anything.",
       },
     ],
     type: "website",
   },
   twitter: {
     card: "summary_large_image",
-    title: "Origin — The zero point between hardware and code",
+    title: "Origin — Control anything",
     description:
-      "TypeScript runtime for Arduinos, robots, and physical devices.",
+      "A runtime for Arduinos, Unitrees, Humanoid robots and physical devices. and physical devices.",
     images: ["/og-image.png"],
   },
   icons: {
