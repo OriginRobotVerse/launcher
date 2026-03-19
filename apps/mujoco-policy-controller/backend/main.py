@@ -15,6 +15,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import sys
 import threading
 import time
@@ -30,6 +31,7 @@ sys.path.insert(0, str(__import__("pathlib").Path(__file__).resolve().parent.par
 from origin_client.client import OriginClient, OriginError
 
 from policies import POLICY_MAP, ALL_POLICIES, Policy
+from neural_policy import NeuralPolicy
 
 # --- App state ---
 
@@ -178,6 +180,19 @@ def get_status() -> StatusResponse:
     )
 
 
+@app.post("/api/command")
+def set_command(body: dict[str, float]):
+    """Set velocity commands for neural policy (vx, vy, yaw in m/s and rad/s)."""
+    if state.active_policy and hasattr(state.active_policy, "set_command"):
+        state.active_policy.set_command(
+            vx=body.get("vx", 0.0),
+            vy=body.get("vy", 0.0),
+            yaw=body.get("yaw", 0.0),
+        )
+        return {"ok": True}
+    raise HTTPException(400, "Active policy does not support velocity commands")
+
+
 @app.get("/api/state")
 def get_device_state():
     if not state.client:
@@ -254,7 +269,18 @@ def main():
     parser.add_argument("--device", default="unitree-go2", help="Device ID")
     parser.add_argument("--port", type=int, default=8000, help="Backend port (default: 8000)")
     parser.add_argument("--hz", type=float, default=30.0, help="Policy loop rate (default: 30)")
+    parser.add_argument("--policy-model", default=None, help="Path to TorchScript (.pt) or ONNX (.onnx) RL policy")
     args = parser.parse_args()
+
+    # Register neural policy if a model file is provided
+    if args.policy_model:
+        neural = NeuralPolicy(
+            name="neural",
+            description=f"RL policy: {os.path.basename(args.policy_model)}",
+            model_path=args.policy_model,
+        )
+        ALL_POLICIES.insert(0, neural)
+        POLICY_MAP["neural"] = neural
 
     state.client = OriginClient(args.origin)
     state.device_id = args.device
@@ -263,6 +289,8 @@ def main():
     print(f"[controller] Origin server: {args.origin}")
     print(f"[controller] Device: {args.device}")
     print(f"[controller] Policy loop: {args.hz} Hz")
+    if args.policy_model:
+        print(f"[controller] RL policy: {args.policy_model}")
     print(f"[controller] Backend: http://localhost:{args.port}")
 
     import uvicorn

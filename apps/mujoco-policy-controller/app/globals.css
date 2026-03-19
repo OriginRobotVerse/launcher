@@ -1,0 +1,186 @@
+@import "tailwindcss";
+
+:root {
+  --void: #0a0a0a;
+  --panel: #111111;
+  --panel-raised: #161616;
+  --wire: #1e1e1e;
+  --wire-bright: #2a2a2a;
+  --signal: #e8e8e8;
+  --dim: #737373;
+  --dim-dark: #4a4a4a;
+  --phosphor: #f59e0b;
+  --phosphor-bright: #fbbf24;
+  --phosphor-dim: #92400e;
+  --phosphor-glow: rgba(245, 158, 11, 0.08);
+  --phosphor-glow-strong: rgba(245, 158, 11, 0.15);
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  background: var(--void);
+  color: var(--signal);
+  font-family: var(--font-jetbrains), "JetBrains Mono", monospace;
+  font-size: 14px;
+  line-height: 1.7;
+  -webkit-font-smoothing: antialiased;
+  height: 100vh;
+  overflow: hidden;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--panel);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--wire-bright);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--dim-dark);
+}
+
+/* Chat message animations */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* Pulse for live indicator */
+@keyframes pulse-dot {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}
+
+.animate-pulse-dot {
+  animation: pulse-dot 2s ease-in-out infinite;
+}
+
+/* Markdown prose in chat bubbles */
+.prose-chat {
+  font-size: 13px;
+  line-height: 1.7;
+  color: var(--signal);
+}
+
+.prose-chat p {
+  margin: 0 0 8px;
+}
+
+.prose-chat p:last-child {
+  margin-bottom: 0;
+}
+
+.prose-chat strong {
+  color: var(--signal);
+  font-weight: 600;
+}
+
+.prose-chat em {
+  color: var(--dim);
+  font-style: italic;
+}
+
+.prose-chat code {
+  background: var(--void);
+  border: 1px solid var(--wire);
+  border-radius: 4px;
+  padding: 1px 5px;
+  font-size: 12px;
+  font-family: inherit;
+  color: var(--phosphor);
+}
+
+.prose-chat pre {
+  background: var(--void);
+  border: 1px solid var(--wire);
+  border-radius: 6px;
+  padding: 12px 14px;
+  margin: 8px 0;
+  overflow-x: auto;
+}
+
+.prose-chat pre code {
+  background: none;
+  border: none;
+  padding: 0;
+  font-size: 12px;
+  color: var(--signal);
+}
+
+.prose-chat ul, .prose-chat ol {
+  margin: 4px 0 8px;
+  padding-left: 20px;
+}
+
+.prose-chat li {
+  margin: 2px 0;
+}
+
+.prose-chat h1, .prose-chat h2, .prose-chat h3, .prose-chat h4 {
+  color: var(--signal);
+  font-weight: 600;
+  margin: 12px 0 6px;
+}
+
+.prose-chat h1 { font-size: 16px; }
+.prose-chat h2 { font-size: 15px; }
+.prose-chat h3 { font-size: 14px; }
+.prose-chat h4 { font-size: 13px; }
+
+.prose-chat a {
+  color: var(--phosphor);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.prose-chat blockquote {
+  border-left: 2px solid var(--phosphor-dim);
+  padding-left: 12px;
+  margin: 8px 0;
+  color: var(--dim);
+}
+
+.prose-chat hr {
+  border: none;
+  border-top: 1px solid var(--wire);
+  margin: 12px 0;
+}
+
+.prose-chat table {
+  border-collapse: collapse;
+  margin: 8px 0;
+  font-size: 12px;
+}
+
+.prose-chat th, .prose-chat td {
+  border: 1px solid var(--wire);
+  padding: 4px 10px;
+  text-align: left;
+}
+
+.prose-chat th {
+  background: var(--panel-raised);
+  font-weight: 600;
+}
