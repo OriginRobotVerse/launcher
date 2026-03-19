@@ -1,5 +1,7 @@
 import { EventEmitter } from "node:events";
+import type { Server } from "node:net";
 import { SerialServerTransport, BluetoothServerTransport } from "./transport.js";
+import { createTcpListener } from "./transport-tcp.js";
 import type {
   ServerTransport,
   StorageAdapter,
@@ -38,7 +40,8 @@ interface ManagedDevice {
 export class DeviceManager extends EventEmitter {
   private devices: Map<string, ManagedDevice> = new Map();
   private storage: StorageAdapter;
-  private listeners: Map<string, PortListener> = new Map(); // keyed by path
+  private portListeners: Map<string, PortListener> = new Map(); // keyed by path
+  private tcpServers: Server[] = [];
 
   constructor(storage: StorageAdapter) {
     super();
@@ -47,7 +50,7 @@ export class DeviceManager extends EventEmitter {
 
   // Register and immediately start listening on a port
   async addPort(config: TransportConfig): Promise<void> {
-    if (this.listeners.has(config.path)) return;
+    if (this.portListeners.has(config.path)) return;
 
     const listener: PortListener = {
       config,
@@ -55,7 +58,7 @@ export class DeviceManager extends EventEmitter {
       deviceId: null,
       status: "disconnected",
     };
-    this.listeners.set(config.path, listener);
+    this.portListeners.set(config.path, listener);
 
     await this.openPort(listener);
   }
@@ -229,6 +232,60 @@ export class DeviceManager extends EventEmitter {
     this.emit("sse", sseEvent);
   }
 
+  // --- TCP support ---
+
+  /**
+   * Start a TCP server that accepts incoming connections from simulators.
+   * Each connection becomes a PortListener just like serial/BT.
+   * The connected process sends an announce message to identify itself.
+   */
+  addTcpListener(port: number): void {
+    const server = createTcpListener(port, (transport, socket) => {
+      const addr = `${socket.remoteAddress}:${socket.remotePort}`;
+      const path = `tcp:${addr}`;
+
+      const listener: PortListener = {
+        config: { type: "serial", path, baudRate: 0 }, // type is unused for TCP
+        transport,
+        deviceId: null,
+        status: "open",
+      };
+      this.portListeners.set(path, listener);
+
+      transport.open();
+
+      transport.onData((line: string) => {
+        let msg: any;
+        try {
+          msg = JSON.parse(line);
+        } catch {
+          console.log(`[port] ${path} non-JSON data: ${line}`);
+          return;
+        }
+        this.handleMessage(listener, msg);
+      });
+
+      // Send discover to prompt announce (simulator may also announce unprompted)
+      transport.write(JSON.stringify({ type: "discover" }));
+
+      transport.onClose(() => {
+        console.log(`[port] TCP closed ${path}`);
+        const prevDeviceId = listener.deviceId;
+        listener.transport = null;
+        listener.deviceId = null;
+        listener.status = "disconnected";
+        this.portListeners.delete(path);
+
+        if (prevDeviceId && this.devices.has(prevDeviceId)) {
+          this.devices.delete(prevDeviceId);
+          this.emitSSE("device.disconnected", prevDeviceId, { id: prevDeviceId });
+        }
+      });
+    });
+
+    this.tcpServers.push(server);
+  }
+
   // --- Public API ---
 
   // Discover: reopen closed ports, send discover to all open ports, wait for announces
@@ -236,7 +293,7 @@ export class DeviceManager extends EventEmitter {
     const connected: DeviceManifest[] = [];
     const failed: Array<{ path: string; error: string }> = [];
 
-    const promises = Array.from(this.listeners.values()).map(async (listener) => {
+    const promises = Array.from(this.portListeners.values()).map(async (listener) => {
       // Reopen disconnected ports
       if (listener.status === "disconnected") {
         console.log(`[discover] Reopening ${listener.config.path}`);
@@ -346,7 +403,7 @@ export class DeviceManager extends EventEmitter {
   }
 
   getPortStatuses(): Array<{ path: string; type: string; status: string; deviceId: string | null }> {
-    return Array.from(this.listeners.values()).map((l) => ({
+    return Array.from(this.portListeners.values()).map((l) => ({
       path: l.config.path,
       type: l.config.type,
       status: l.status,
@@ -368,15 +425,19 @@ export class DeviceManager extends EventEmitter {
   }
 
   async shutdown(): Promise<void> {
-    for (const [id, device] of this.devices) {
+    for (const [id] of this.devices) {
       this.emitSSE("device.disconnected", id, { id });
     }
-    for (const listener of this.listeners.values()) {
+    for (const listener of this.portListeners.values()) {
       if (listener.transport) {
         try { await listener.transport.close(); } catch {}
       }
     }
+    for (const server of this.tcpServers) {
+      server.close();
+    }
     this.devices.clear();
-    this.listeners.clear();
+    this.portListeners.clear();
+    this.tcpServers = [];
   }
 }
