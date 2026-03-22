@@ -864,6 +864,83 @@ section {
   opacity: 0.5;
 }
 
+/* ---- WAITLIST ---- */
+.waitlist-form {
+  display: flex;
+  gap: 1px;
+  max-width: 420px;
+  margin: 0 auto;
+  background: var(--wire);
+}
+
+.waitlist-input {
+  flex: 1;
+  padding: 16px 20px;
+  background: var(--panel);
+  border: none;
+  color: var(--signal);
+  font-family: inherit;
+  font-size: 13px;
+  letter-spacing: 0.02em;
+  outline: none;
+}
+
+.waitlist-input::placeholder {
+  color: var(--dim-dark);
+}
+
+.waitlist-input:focus {
+  background: var(--panel-raised);
+}
+
+.waitlist-btn {
+  padding: 16px 28px;
+  background: var(--phosphor);
+  color: var(--void);
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  border: none;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: opacity 0.2s;
+}
+
+.waitlist-btn:hover {
+  opacity: 0.9;
+}
+
+.waitlist-btn:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.waitlist-success {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  padding: 18px 36px;
+  border: 2px solid var(--phosphor);
+  color: var(--phosphor);
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+}
+
+.waitlist-success .ws-dot {
+  width: 8px;
+  height: 8px;
+  background: var(--phosphor);
+  animation: dotBlink 2s ease-in-out infinite;
+}
+
+.waitlist-error {
+  margin-top: 12px;
+  font-size: 12px;
+  color: #fca5a5;
+}
+
 /* ---- FOOTER ---- */
 footer {
   border-top: 1px solid var(--wire);
@@ -888,6 +965,22 @@ footer {
   font-size: 13px;
   font-weight: 500;
   color: var(--dim);
+}
+
+.footer-links {
+  display: flex;
+  gap: 16px;
+}
+
+.footer-social {
+  color: var(--dim);
+  transition: color 0.2s;
+  display: flex;
+  align-items: center;
+}
+
+.footer-social:hover {
+  color: var(--phosphor);
 }
 
 .footer-right {
@@ -1038,6 +1131,11 @@ footer {
 
   .appstore h2 {
     font-size: 28px;
+  }
+
+  .waitlist-form {
+    flex-direction: column;
+    max-width: 100%;
   }
 
   .appstore-apps {

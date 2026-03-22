@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, FormEvent } from "react";
 
 function OriginLogo({ size = 22 }: { size?: number }) {
   return (
@@ -72,6 +72,36 @@ const tickerItems = [
 
 export default function LandingPage() {
   const [navOpen, setNavOpen] = useState(false);
+  const [email, setEmail] = useState("");
+  const [waitlistStatus, setWaitlistStatus] = useState<
+    "idle" | "loading" | "success" | "error"
+  >("idle");
+  const [waitlistMsg, setWaitlistMsg] = useState("");
+
+  async function handleWaitlist(e: FormEvent) {
+    e.preventDefault();
+    if (!email.trim()) return;
+    setWaitlistStatus("loading");
+    try {
+      const res = await fetch("/api/waitlist", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: email.trim() }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setWaitlistStatus("success");
+        setWaitlistMsg("You're on the list.");
+        setEmail("");
+      } else {
+        setWaitlistStatus("error");
+        setWaitlistMsg(data.error || "Something went wrong.");
+      }
+    } catch {
+      setWaitlistStatus("error");
+      setWaitlistMsg("Something went wrong.");
+    }
+  }
 
   useEffect(() => {
     const reveals = document.querySelectorAll(".reveal");
@@ -518,10 +548,34 @@ export default function LandingPage() {
             device and run it. Build once, run on any Origin-compatible device.
           </p>
 
-          <div className="appstore-btn">
-            <div className="btn-dot" />
-            Origin App Store — Coming Soon
-          </div>
+          {waitlistStatus === "success" ? (
+            <div className="waitlist-success">
+              <div className="ws-dot" />
+              {waitlistMsg}
+            </div>
+          ) : (
+            <form className="waitlist-form" onSubmit={handleWaitlist}>
+              <input
+                type="email"
+                placeholder="you@email.com"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+                className="waitlist-input"
+                disabled={waitlistStatus === "loading"}
+              />
+              <button
+                type="submit"
+                className="waitlist-btn"
+                disabled={waitlistStatus === "loading"}
+              >
+                {waitlistStatus === "loading" ? "..." : "Join Waitlist"}
+              </button>
+            </form>
+          )}
+          {waitlistStatus === "error" && (
+            <div className="waitlist-error">{waitlistMsg}</div>
+          )}
 
           <div className="appstore-apps reveal reveal-delay-2">
             <div className="app-preview">
@@ -568,6 +622,19 @@ export default function LandingPage() {
         <div className="footer-left">
           <OriginLogo size={20} />
           <span>origin</span>
+        </div>
+        <div className="footer-links">
+          <a
+            href="https://x.com/use_origin"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="footer-social"
+            aria-label="Follow on X"
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
+            </svg>
+          </a>
         </div>
         <div className="footer-right">
           Control anything.
