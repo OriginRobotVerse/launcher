@@ -230,8 +230,15 @@ export async function runUp(args: string[]): Promise<void> {
   }
   await Promise.allSettled(portPromises);
 
-  for (const tcpPort of tcp) {
-    deviceManager.addTcpListener(tcpPort);
+  // Always start a TCP listener for simulator connections.
+  // The simulatorManager tells spawned simulators to connect here.
+  deviceManager.addTcpListener(tcpPort);
+
+  // Start any additional user-specified TCP listeners
+  for (const userTcpPort of tcp) {
+    if (userTcpPort !== tcpPort) {
+      deviceManager.addTcpListener(userTcpPort);
+    }
   }
 
   // Start HTTP server
@@ -240,6 +247,7 @@ export async function runUp(args: string[]): Promise<void> {
     console.log("  origin v0.6.0");
     console.log("");
     console.log(`  server       → http://localhost:${port}`);
+    console.log(`  simulator    → tcp://localhost:${tcpPort}`);
     if (dashboardDir) {
       console.log(`  dashboard    → http://localhost:${port}`);
     }

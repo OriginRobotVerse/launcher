@@ -122,10 +122,14 @@ export class SimulatorManager extends EventEmitter {
     const pythonCwd = resolve(this.simulatorsDir, "..");
     let venvBin = this.findVenvBin();
 
-    // Auto-setup: create venv and install deps if no venv exists
+    // Auto-setup: create venv and install deps if no venv exists,
+    // or if the venv is missing required packages
     if (!venvBin) {
       addLog("[simulator] No Python venv found — setting up automatically...");
       venvBin = await this.setupVenv(addLog);
+    } else if (!this.venvHasRequiredPackages(venvBin)) {
+      addLog("[simulator] Venv exists but missing packages — installing...");
+      await this.installDepsInVenv(venvBin, addLog);
     }
 
     let pythonExe: string;
@@ -276,6 +280,68 @@ export class SimulatorManager extends EventEmitter {
       return venvBin;
     }
     return null;
+  }
+
+  /**
+   * Check if the venv has all required packages by trying to import them.
+   */
+  private venvHasRequiredPackages(venvBin: string): boolean {
+    const python = join(venvBin, "python3");
+    if (!existsSync(python)) return false;
+
+    const result = spawnSync(python, [
+      "-c",
+      "import mujoco; import numpy; import robot_descriptions",
+    ], {
+      encoding: "utf-8",
+      timeout: 10000,
+      stdio: ["pipe", "pipe", "pipe"],
+    });
+
+    return result.status === 0;
+  }
+
+  /**
+   * Install requirements into an existing venv.
+   */
+  private async installDepsInVenv(venvBin: string, log: (msg: string) => void): Promise<void> {
+    const pip = join(venvBin, "pip");
+    if (!existsSync(pip)) {
+      log("[simulator] pip not found in venv — cannot install dependencies");
+      return;
+    }
+
+    const requirementsFile = join(this.simulatorsDir, "mujoco", "requirements.txt");
+
+    if (existsSync(requirementsFile)) {
+      log("[simulator] Installing missing dependencies from requirements.txt...");
+      const installResult = spawnSync(pip, ["install", "-r", requirementsFile], {
+        encoding: "utf-8",
+        timeout: 300000,
+        stdio: ["pipe", "pipe", "pipe"],
+      });
+
+      if (installResult.status !== 0) {
+        const err = installResult.stderr?.trim().split("\n").slice(-3).join("\n") || `exit code ${installResult.status}`;
+        log(`[simulator] pip install failed:\n${err}`);
+        return;
+      }
+    } else {
+      log("[simulator] Installing mujoco, numpy, robot_descriptions...");
+      const installResult = spawnSync(pip, ["install", "mujoco", "numpy", "robot_descriptions"], {
+        encoding: "utf-8",
+        timeout: 300000,
+        stdio: ["pipe", "pipe", "pipe"],
+      });
+
+      if (installResult.status !== 0) {
+        const err = installResult.stderr?.trim().split("\n").slice(-3).join("\n") || `exit code ${installResult.status}`;
+        log(`[simulator] pip install failed:\n${err}`);
+        return;
+      }
+    }
+
+    log("[simulator] Dependencies installed successfully.");
   }
 
   private findVenvBin(): string | null {
