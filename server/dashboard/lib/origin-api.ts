@@ -10,7 +10,19 @@ import type {
   SimulatorLogsResponse,
 } from "./types";
 
-const ORIGIN_URL = process.env.NEXT_PUBLIC_ORIGIN_URL ?? "http://localhost:5050";
+// Resolve at runtime in the browser:
+// 1. Check for build-time env var (dev mode with next dev)
+// 2. Fall back to http://localhost:5050 (default)
+// When served as a static export, NEXT_PUBLIC_ORIGIN_URL is baked in at build time.
+// The static server injects the correct URL via a script tag if needed.
+function getOriginUrl(): string {
+  if (typeof window !== "undefined" && (window as any).__ORIGIN_URL__) {
+    return (window as any).__ORIGIN_URL__;
+  }
+  return process.env.NEXT_PUBLIC_ORIGIN_URL ?? "http://localhost:5050";
+}
+
+const ORIGIN_URL = getOriginUrl();
 
 async function api<T>(method: string, path: string, body?: unknown): Promise<T> {
   const res = await fetch(`${ORIGIN_URL}${path}`, {
