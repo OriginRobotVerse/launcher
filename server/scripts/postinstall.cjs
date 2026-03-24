@@ -1,39 +1,30 @@
-// Ensure better-sqlite3 native addon is available.
-// pnpm global installs can skip prebuild-install, so we check and rebuild if needed.
+// Ensure better-sqlite3 native addon is compiled.
+// pnpm global installs often skip lifecycle scripts for dependencies,
+// so the prebuild binary never gets downloaded/compiled.
 
 const { execSync } = require("child_process");
 const path = require("path");
 
 try {
   require("better-sqlite3");
-  // Native addon loaded fine — nothing to do
 } catch (e) {
-  console.log("[originrobot] Rebuilding better-sqlite3 native module...");
+  console.log("[originrobot] better-sqlite3 native addon missing, rebuilding...");
   try {
-    // Find the better-sqlite3 package directory
-    const bsqlPath = path.dirname(require.resolve("better-sqlite3/package.json"));
-    // Run its install script (prebuild-install → node-gyp fallback)
-    execSync("npm run install --ignore-scripts=false", {
-      cwd: bsqlPath,
+    const bsqlDir = path.dirname(require.resolve("better-sqlite3/package.json"));
+    execSync("npx --yes node-gyp rebuild --release", {
+      cwd: bsqlDir,
       stdio: "inherit",
-      env: { ...process.env, npm_config_node_gyp: undefined },
     });
+    // Verify it loads now
+    require("better-sqlite3");
     console.log("[originrobot] better-sqlite3 rebuilt successfully.");
-  } catch (rebuildErr) {
-    // Try node-gyp directly as last resort
-    try {
-      const bsqlPath = path.dirname(require.resolve("better-sqlite3/package.json"));
-      execSync("npx --yes node-gyp rebuild --release", {
-        cwd: bsqlPath,
-        stdio: "inherit",
-      });
-      console.log("[originrobot] better-sqlite3 rebuilt via node-gyp.");
-    } catch {
-      console.error(
-        "[originrobot] Failed to build better-sqlite3. You may need to run:\n" +
-        "  npm rebuild better-sqlite3\n" +
-        "or install build tools: xcode-select --install (macOS) / apt install build-essential (Linux)"
-      );
-    }
+  } catch (err) {
+    console.error(
+      "[originrobot] Failed to build better-sqlite3.\n" +
+      "  Try: pnpm rebuild better-sqlite3\n" +
+      "  Or install build tools:\n" +
+      "    macOS:  xcode-select --install\n" +
+      "    Linux:  apt install build-essential python3\n"
+    );
   }
 }
