@@ -10,9 +10,14 @@
   },
   "files": [
     "dist",
-    "dashboard/.next/standalone",
-    "dashboard/.next/static",
+    "dashboard/app",
+    "dashboard/components",
+    "dashboard/lib",
     "dashboard/public",
+    "dashboard/package.json",
+    "dashboard/next.config.ts",
+    "dashboard/tsconfig.json",
+    "dashboard/postcss.config.mjs",
     "scripts/postinstall.cjs",
     "simulators",
     "schemas"
@@ -28,6 +33,9 @@
   },
   "dependencies": {
     "better-sqlite3": "^12.8.0",
+    "next": "^16.1.6",
+    "react": "^19.1.0",
+    "react-dom": "^19.1.0",
     "serialport": "^12.0.0"
   },
   "devDependencies": {

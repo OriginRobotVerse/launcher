@@ -1,5 +1,5 @@
-import { readFileSync, existsSync, readdirSync, mkdirSync } from "node:fs";
-import { resolve, dirname, join } from "node:path";
+import { readFileSync, existsSync, mkdirSync } from "node:fs";
+import { resolve, dirname } from "node:path";
 import { pathToFileURL, fileURLToPath } from "node:url";
 import { spawn, spawnSync, exec, type ChildProcess } from "node:child_process";
 import { DeviceManager } from "../device-manager.js";
@@ -242,79 +242,28 @@ export async function runUp(args: string[]): Promise<void> {
   if (!flags.noDashboard) {
     const dashboardDir = resolve(packageRoot, "dashboard");
 
-    // Find the standalone server.js — Next.js standalone output nests it under the project path
-    const standaloneDir = resolve(dashboardDir, ".next", "standalone");
-    let standaloneServerJs: string | null = null;
-    if (existsSync(standaloneDir)) {
-      // Find server.js recursively (Next.js nests it based on project path)
-      const findServerJs = (dir: string): string | null => {
-        const candidate = join(dir, "server.js");
-        if (existsSync(candidate)) return candidate;
-        try {
-          for (const entry of readdirSync(dir, { withFileTypes: true })) {
-            if (entry.isDirectory() && entry.name !== "node_modules") {
-              const found = findServerJs(join(dir, entry.name));
-              if (found) return found;
-            }
-          }
-        } catch {}
-        return null;
-      };
-      standaloneServerJs = findServerJs(standaloneDir);
-    }
+    if (existsSync(dashboardDir)) {
+      // Resolve the next binary — check dashboard's own node_modules first,
+      // then the parent package's node_modules (where it lives when published)
+      const localNextBin = resolve(dashboardDir, "node_modules", ".bin", "next");
+      const parentNextBin = resolve(packageRoot, "node_modules", ".bin", "next");
+      const nextBin = existsSync(localNextBin) ? localNextBin
+        : existsSync(parentNextBin) ? parentNextBin
+        : null;
 
-    if (standaloneServerJs) {
-      // Production mode: run the standalone Next.js server
-      // Copy static files next to the standalone .next dir if needed
-      const standaloneRoot = dirname(standaloneServerJs);
-      dashboardProcess = spawn("node", [standaloneServerJs], {
-        cwd: standaloneRoot,
-        env: {
-          ...process.env,
-          PORT: String(dashboardPort),
-          HOSTNAME: "0.0.0.0",
-        },
-        stdio: "pipe",
-      });
+      if (!nextBin) {
+        console.log("  dashboard    → next not found, skipping");
+      } else {
+        // Check if dashboard is already built
+        const nextDir = resolve(dashboardDir, ".next");
+        const isBuilt = existsSync(nextDir);
 
-      dashboardProcess.stdout?.on("data", (d: Buffer) => {
-        const text = String(d).trim();
-        if (text) process.stdout.write(`  [dashboard] ${text}\n`);
-      });
-      dashboardProcess.stderr?.on("data", (d: Buffer) => {
-        const text = String(d).trim();
-        if (text) process.stderr.write(`  [dashboard] ${text}\n`);
-      });
+        // Dev mode: dashboard has its own node_modules (local development)
+        const isDev = existsSync(localNextBin);
 
-      console.log(`  dashboard    → http://localhost:${dashboardPort}`);
-    } else if (existsSync(dashboardDir)) {
-      // Dev mode: spawn next dev process
-      const dashboardNodeModules = resolve(dashboardDir, "node_modules");
-      if (!existsSync(dashboardNodeModules)) {
-        console.log("  [dashboard] Installing dependencies...");
-        const installResult = spawnSync("pnpm", ["install", "--frozen-lockfile"], {
-          cwd: dashboardDir,
-          stdio: "pipe",
-        });
-        if (installResult.status !== 0) {
-          spawnSync("pnpm", ["install"], { cwd: dashboardDir, stdio: "pipe" });
-        }
-      }
-
-      const nextBin = resolve(dashboardDir, "node_modules", ".bin", "next");
-      const useLocalNext = existsSync(nextBin);
-
-      dashboardProcess = useLocalNext
-        ? spawn(nextBin, ["dev", "-p", String(dashboardPort)], {
-            cwd: dashboardDir,
-            env: {
-              ...process.env,
-              NEXT_PUBLIC_ORIGIN_URL: `http://localhost:${port}`,
-              PORT: String(dashboardPort),
-            },
-            stdio: "pipe",
-          })
-        : spawn("pnpm", ["next", "dev", "-p", String(dashboardPort)], {
+        if (isDev) {
+          // Dev mode — use next dev for hot reload
+          dashboardProcess = spawn(nextBin, ["dev", "-p", String(dashboardPort)], {
             cwd: dashboardDir,
             env: {
               ...process.env,
@@ -323,17 +272,41 @@ export async function runUp(args: string[]): Promise<void> {
             },
             stdio: "pipe",
           });
+          console.log(`  dashboard    → http://localhost:${dashboardPort} (dev)`);
+        } else {
+          // Production mode — build if needed, then next start
+          if (!isBuilt) {
+            console.log("  [dashboard] Building...");
+            spawnSync(nextBin, ["build"], {
+              cwd: dashboardDir,
+              env: {
+                ...process.env,
+                NEXT_PUBLIC_ORIGIN_URL: `http://localhost:${port}`,
+              },
+              stdio: "pipe",
+            });
+          }
 
-      dashboardProcess.stdout?.on("data", (d: Buffer) => {
-        const text = String(d).trim();
-        if (text) process.stdout.write(`  [dashboard] ${text}\n`);
-      });
-      dashboardProcess.stderr?.on("data", (d: Buffer) => {
-        const text = String(d).trim();
-        if (text) process.stderr.write(`  [dashboard] ${text}\n`);
-      });
+          dashboardProcess = spawn(nextBin, ["start", "-p", String(dashboardPort)], {
+            cwd: dashboardDir,
+            env: {
+              ...process.env,
+              PORT: String(dashboardPort),
+            },
+            stdio: "pipe",
+          });
+          console.log(`  dashboard    → http://localhost:${dashboardPort}`);
+        }
 
-      console.log(`  dashboard    → http://localhost:${dashboardPort} (dev)`);
+        dashboardProcess.stdout?.on("data", (d: Buffer) => {
+          const text = String(d).trim();
+          if (text) process.stdout.write(`  [dashboard] ${text}\n`);
+        });
+        dashboardProcess.stderr?.on("data", (d: Buffer) => {
+          const text = String(d).trim();
+          if (text) process.stderr.write(`  [dashboard] ${text}\n`);
+        });
+      }
     } else {
       console.log(`  dashboard    → not found (${dashboardDir})`);
     }
