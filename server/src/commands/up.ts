@@ -494,7 +494,9 @@ export async function runUp(args: string[]): Promise<void> {
     if (existsSync(dashboardDir)) {
       const resolved = await resolveNextBinary(dashboardDir, packageRoot);
 
-      dashboardProcess = spawn(resolved.command, [...resolved.args, "dev", "-p", String(dashboardPort)], {
+      // Use --no-turbopack: Turbopack crashes when resolving modules from
+      // pnpm's content-addressable store / nested node_modules layout
+      dashboardProcess = spawn(resolved.command, [...resolved.args, "dev", "--no-turbopack", "-p", String(dashboardPort)], {
         cwd: dashboardDir,
         env: {
           ...process.env,
