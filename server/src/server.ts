@@ -1,4 +1,6 @@
 import { createServer, IncomingMessage, ServerResponse } from "node:http";
+import { readFileSync, existsSync, statSync } from "node:fs";
+import { resolve, extname } from "node:path";
 import type { DeviceManager } from "./device-manager.js";
 import type { AppManager } from "./app-manager.js";
 import type { SimulatorManager } from "./simulator-manager.js";
@@ -6,6 +8,22 @@ import type { SSEManager } from "./sse.js";
 import type { WebhookManager } from "./webhooks.js";
 import type { ActionRequest, WebhookRegistration, StorageAdapter, DeviceProfile } from "./types.js";
 import { resolveProfile, BUILTIN_PROFILES } from "./device-profiles.js";
+
+const MIME_TYPES: Record<string, string> = {
+  ".html": "text/html; charset=utf-8",
+  ".js": "application/javascript",
+  ".css": "text/css",
+  ".json": "application/json",
+  ".png": "image/png",
+  ".jpg": "image/jpeg",
+  ".jpeg": "image/jpeg",
+  ".svg": "image/svg+xml",
+  ".ico": "image/x-icon",
+  ".woff": "font/woff",
+  ".woff2": "font/woff2",
+  ".txt": "text/plain",
+  ".map": "application/json",
+};
 
 interface ServerOptions {
   port: number;
@@ -16,6 +34,8 @@ interface ServerOptions {
   webhookManager: WebhookManager;
   authCheck: (req: IncomingMessage, res: ServerResponse) => boolean;
   storage: StorageAdapter;
+  /** Path to the pre-built dashboard (dashboard/out/) — if set, serves static files */
+  dashboardDir?: string;
 }
 
 function parseUrl(url: string): { path: string; query: Record<string, string> } {
@@ -72,6 +92,56 @@ function matchDeviceRoute(
 
 const startTime = Date.now();
 
+/**
+ * Serve a static file from the dashboard directory.
+ * Returns true if a file was served, false otherwise.
+ */
+function serveDashboardFile(
+  res: ServerResponse,
+  dashboardDir: string,
+  urlPath: string,
+): boolean {
+  // Resolve the file path and ensure it's within the dashboard directory
+  // (prevents path traversal attacks)
+  const safePath = urlPath.replace(/\.\./g, "").replace(/\/\//g, "/");
+  const filePath = resolve(dashboardDir, safePath.startsWith("/") ? safePath.slice(1) : safePath);
+
+  if (!filePath.startsWith(dashboardDir)) return false;
+
+  // Try exact file
+  if (existsSync(filePath) && statSync(filePath).isFile()) {
+    serveStaticFile(res, filePath);
+    return true;
+  }
+
+  // Try path/index.html (for directory-like URLs e.g. /apps → /apps/index.html)
+  const indexPath = resolve(filePath, "index.html");
+  if (existsSync(indexPath) && statSync(indexPath).isFile()) {
+    serveStaticFile(res, indexPath);
+    return true;
+  }
+
+  return false;
+}
+
+function serveStaticFile(res: ServerResponse, filePath: string): void {
+  const ext = extname(filePath);
+  const contentType = MIME_TYPES[ext] ?? "application/octet-stream";
+  const headers: Record<string, string> = {
+    "Content-Type": contentType,
+    "Access-Control-Allow-Origin": "*",
+  };
+
+  // Immutable cache for hashed assets (_next/static/...)
+  if (filePath.includes("/_next/static/")) {
+    headers["Cache-Control"] = "public, max-age=31536000, immutable";
+  }
+
+  const content = readFileSync(filePath);
+  res.writeHead(200, headers);
+  res.end(content);
+}
+
 export function createOriginServer(opts: ServerOptions) {
   const { deviceManager, appManager, simulatorManager, sseManager, webhookManager, authCheck, storage } = opts;
 
@@ -89,11 +159,11 @@ export function createOriginServer(opts: ServerOptions) {
     if (!authCheck(req, res)) return;
 
     try {
-      // --- Root ---
-      if (path === "/" && method === "GET") {
+      // --- Server info (moved from / to /api/info so root serves dashboard) ---
+      if ((path === "/api/info" || path === "/api/health") && method === "GET") {
         json(res, 200, {
           name: "origin-server",
-          version: "0.2.0",
+          version: "0.6.0",
           uptime: Math.floor((Date.now() - startTime) / 1000),
           deviceCount: deviceManager.getDeviceIds().length,
         });
@@ -603,6 +673,20 @@ export function createOriginServer(opts: ServerOptions) {
 
         notFound(res);
         return;
+      }
+
+      // --- Dashboard static files ---
+      if (opts.dashboardDir && method === "GET") {
+        // Try to serve the exact file or path/index.html
+        if (serveDashboardFile(res, opts.dashboardDir, path)) return;
+
+        // SPA fallback: serve index.html for any unmatched GET request
+        // (client-side Next.js router handles routing)
+        const indexHtml = resolve(opts.dashboardDir, "index.html");
+        if (existsSync(indexHtml)) {
+          serveStaticFile(res, indexHtml);
+          return;
+        }
       }
 
       notFound(res);

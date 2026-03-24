@@ -5,7 +5,7 @@ import type { AppSummary } from "@/lib/types";
 export function AppCard({ app }: { app: AppSummary }) {
   return (
     <Link
-      href={`/apps/${encodeURIComponent(app.id)}`}
+      href={`/apps/detail?id=${encodeURIComponent(app.id)}`}
       className="block border border-wire bg-panel p-4 hover:border-wire-bright hover:bg-panel-raised transition-colors"
     >
       <div className="flex items-center gap-2 mb-2">

@@ -1,7 +1,7 @@
 "use client";
 
-import { useCallback } from "react";
-import { useParams, useRouter } from "next/navigation";
+import { Suspense, useCallback } from "react";
+import { useSearchParams, useRouter } from "next/navigation";
 import { usePoll } from "@/lib/use-poll";
 import { useDeviceSSE } from "@/lib/use-sse";
 import { getApp, stopApp } from "@/lib/origin-api";
@@ -16,20 +16,31 @@ function formatUptime(seconds: number): string {
 }
 
 export default function RunningAppPage() {
-  const params = useParams();
+  return (
+    <Suspense fallback={<div className="text-dim text-xs mt-12">Loading...</div>}>
+      <RunningAppInner />
+    </Suspense>
+  );
+}
+
+function RunningAppInner() {
+  const searchParams = useSearchParams();
   const router = useRouter();
-  const appId = params.id as string;
+  const appId = searchParams.get("id") ?? "";
 
   const appFetcher = useCallback(() => getApp(appId), [appId]);
   const { data: app, loading } = usePoll(appFetcher, 3000);
 
   // Get live state from the device this app is running on
-  // We need to extract deviceId from the running app info
   const deviceId = app?.running
     ? Object.entries(app.compatibility).find(([_, c]) => c.compatible)?.[0] ?? ""
     : "";
 
   const { state: liveState } = useDeviceSSE(deviceId || "none");
+
+  if (!appId) {
+    return <div className="text-dim text-xs mt-12">No app ID specified</div>;
+  }
 
   if (loading || !app) {
     return <div className="text-dim text-xs mt-12">Loading...</div>;
@@ -37,14 +48,14 @@ export default function RunningAppPage() {
 
   // If not running, redirect to detail page
   if (!app.running) {
-    router.push(`/apps/${encodeURIComponent(appId)}`);
+    router.push(`/apps/detail?id=${encodeURIComponent(appId)}`);
     return null;
   }
 
   const handleStop = async () => {
     try {
       await stopApp(appId);
-      router.push(`/apps/${encodeURIComponent(appId)}`);
+      router.push(`/apps/detail?id=${encodeURIComponent(appId)}`);
     } catch (err) {
       console.error("Failed to stop app:", err);
     }

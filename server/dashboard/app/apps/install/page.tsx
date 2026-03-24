@@ -84,7 +84,7 @@ export default function InstallPage() {
           </p>
           <div className="flex gap-3">
             <button
-              onClick={() => router.push(`/apps/${encodeURIComponent(result.id)}`)}
+              onClick={() => router.push(`/apps/detail?id=${encodeURIComponent(result.id)}`)}
               className="border border-wire px-4 py-1.5 text-[11px] text-phosphor hover:bg-phosphor-glow-strong transition-colors"
             >
               VIEW APP

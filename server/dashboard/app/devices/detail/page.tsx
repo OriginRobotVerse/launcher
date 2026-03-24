@@ -1,7 +1,7 @@
 "use client";
 
-import { useCallback, useState, useEffect } from "react";
-import { useParams } from "next/navigation";
+import { Suspense, useCallback, useState, useEffect } from "react";
+import { useSearchParams } from "next/navigation";
 import { usePoll } from "@/lib/use-poll";
 import { useDeviceSSE } from "@/lib/use-sse";
 import { getDevice, getProfile, saveProfile, deleteProfile } from "@/lib/origin-api";
@@ -10,8 +10,16 @@ import { StatusDot } from "@/components/status-dot";
 import type { DeviceProfile, DeviceType } from "@/lib/types";
 
 export default function DeviceDetailPage() {
-  const params = useParams();
-  const deviceId = params.id as string;
+  return (
+    <Suspense fallback={<div className="text-dim text-xs mt-12">Loading device...</div>}>
+      <DeviceDetailInner />
+    </Suspense>
+  );
+}
+
+function DeviceDetailInner() {
+  const searchParams = useSearchParams();
+  const deviceId = searchParams.get("id") ?? "";
 
   const deviceFetcher = useCallback(() => getDevice(deviceId), [deviceId]);
   const profileFetcher = useCallback(() => getProfile(deviceId), [deviceId]);
@@ -29,6 +37,10 @@ export default function DeviceDetailPage() {
       setEditProfile(profile);
     }
   }, [profile, editing]);
+
+  if (!deviceId) {
+    return <div className="text-dim text-xs mt-12">No device ID specified</div>;
+  }
 
   if (deviceLoading || !device) {
     return <div className="text-dim text-xs mt-12">Loading device...</div>;
