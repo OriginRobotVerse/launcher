@@ -31,17 +31,26 @@ function toArray(val: string | string[] | undefined): string[] {
 }
 
 async function loadConfigFile(): Promise<OriginConfig | null> {
-  for (const name of ["config.ts", "config.js"]) {
-    const filePath = resolve(process.cwd(), name);
-    if (!existsSync(filePath)) continue;
-    try {
-      const fileUrl = pathToFileURL(filePath).href;
-      const mod = await import(fileUrl);
-      const config: OriginConfig = mod.default ?? mod;
-      return config;
-    } catch (err) {
-      const message = err instanceof Error ? err.message : String(err);
-      console.error(`[config] Failed to load ${name}: ${message}`);
+  const homeDir = process.env.HOME ?? process.env.USERPROFILE ?? "";
+  const originDir = homeDir ? resolve(homeDir, ".origin") : null;
+
+  // Search order: CWD first, then ~/.origin/
+  const searchDirs = [process.cwd()];
+  if (originDir) searchDirs.push(originDir);
+
+  for (const dir of searchDirs) {
+    for (const name of ["config.ts", "config.js"]) {
+      const filePath = resolve(dir, name);
+      if (!existsSync(filePath)) continue;
+      try {
+        const fileUrl = pathToFileURL(filePath).href;
+        const mod = await import(fileUrl);
+        const config: OriginConfig = mod.default ?? mod;
+        return config;
+      } catch (err) {
+        const message = err instanceof Error ? err.message : String(err);
+        console.error(`[config] Failed to load ${filePath}: ${message}`);
+      }
     }
   }
   return null;
