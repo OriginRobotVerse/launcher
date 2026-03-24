@@ -1,5 +1,5 @@
 import { EventEmitter } from "node:events";
-import { spawn, type ChildProcess } from "node:child_process";
+import { spawn, spawnSync, type ChildProcess } from "node:child_process";
 import { existsSync } from "node:fs";
 import { resolve, join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -120,7 +120,13 @@ export class SimulatorManager extends EventEmitter {
     // The cwd for python must be the parent of "simulators/" so that
     // `python -m simulators.mujoco` resolves the package correctly.
     const pythonCwd = resolve(this.simulatorsDir, "..");
-    const venvBin = this.findVenvBin();
+    let venvBin = this.findVenvBin();
+
+    // Auto-setup: create venv and install deps if no venv exists
+    if (!venvBin) {
+      addLog("[simulator] No Python venv found — setting up automatically...");
+      venvBin = await this.setupVenv(addLog);
+    }
 
     let pythonExe: string;
     if (venvBin && !headless && existsSync(join(venvBin, "mjpython"))) {
@@ -203,6 +209,73 @@ export class SimulatorManager extends EventEmitter {
       return logs.slice(-lines);
     }
     return [...logs];
+  }
+
+  /**
+   * Auto-create a Python venv and install mujoco dependencies.
+   * The venv is created at simulators/mujoco/.venv/
+   */
+  private async setupVenv(log: (msg: string) => void): Promise<string | null> {
+    const venvDir = join(this.simulatorsDir, "mujoco", ".venv");
+    const venvBin = join(venvDir, "bin");
+    const requirementsFile = join(this.simulatorsDir, "mujoco", "requirements.txt");
+
+    // Step 1: Create the venv
+    log("[simulator] Creating Python virtual environment...");
+    const createResult = spawnSync("python3", ["-m", "venv", venvDir], {
+      encoding: "utf-8",
+      timeout: 30000,
+      stdio: ["pipe", "pipe", "pipe"],
+    });
+
+    if (createResult.status !== 0) {
+      const err = createResult.stderr?.trim() || `exit code ${createResult.status}`;
+      log(`[simulator] Failed to create venv: ${err}`);
+      return null;
+    }
+
+    // Step 2: Install requirements
+    const pip = join(venvBin, "pip");
+    if (!existsSync(pip)) {
+      log("[simulator] pip not found in venv — cannot install dependencies");
+      return null;
+    }
+
+    if (existsSync(requirementsFile)) {
+      log("[simulator] Installing dependencies (mujoco, numpy)... this may take a minute.");
+      const installResult = spawnSync(pip, ["install", "-r", requirementsFile], {
+        encoding: "utf-8",
+        timeout: 300000, // 5 min — mujoco is a large package
+        stdio: ["pipe", "pipe", "pipe"],
+      });
+
+      if (installResult.status !== 0) {
+        const err = installResult.stderr?.trim().split("\n").slice(-3).join("\n") || `exit code ${installResult.status}`;
+        log(`[simulator] pip install failed:\n${err}`);
+        return null;
+      }
+    } else {
+      // Fallback: install known deps directly
+      log("[simulator] No requirements.txt found — installing mujoco and numpy directly...");
+      const installResult = spawnSync(pip, ["install", "mujoco", "numpy"], {
+        encoding: "utf-8",
+        timeout: 300000,
+        stdio: ["pipe", "pipe", "pipe"],
+      });
+
+      if (installResult.status !== 0) {
+        const err = installResult.stderr?.trim().split("\n").slice(-3).join("\n") || `exit code ${installResult.status}`;
+        log(`[simulator] pip install failed:\n${err}`);
+        return null;
+      }
+    }
+
+    log("[simulator] Dependencies installed successfully.");
+
+    if (existsSync(join(venvBin, "python3"))) {
+      return venvBin;
+    }
+    return null;
   }
 
   private findVenvBin(): string | null {
