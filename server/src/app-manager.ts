@@ -98,7 +98,7 @@ export class AppManager extends EventEmitter {
       if (existsSync(installPath)) {
         throw new Error(`App directory already exists: ${installPath}`);
       }
-      execSync(`git clone ${source} ${installPath}`, { stdio: "pipe" });
+      execSync(`git clone "${source}" "${installPath}"`, { stdio: "pipe" });
     } else if (source.startsWith("http://") || source.startsWith("https://")) {
       // Tarball URL
       const name = opts?.name ?? "app-" + Date.now();
