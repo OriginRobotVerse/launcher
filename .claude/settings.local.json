@@ -18,7 +18,9 @@
       "Bash(pnpm cli:*)",
       "Bash(git fetch:*)",
       "Bash(git rebase:*)",
-      "Bash(git stash:*)"
+      "Bash(git stash:*)",
+      "Bash(lsof -ti:5050 -ti:5051 -ti:5052)",
+      "Bash(python3 -c \"import json,sys; d=json.load\\(sys.stdin\\); print\\(''''name:'''', d.get\\(''''name''''\\)\\); print\\(''''bin:'''', json.dumps\\(d.get\\(''''bin'''', {}\\), indent=2\\)\\)\")"
     ]
   }
 }

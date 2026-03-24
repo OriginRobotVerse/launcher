@@ -17,7 +17,7 @@ Create `origin-app.json` at the app root. The JSON schema is at `schemas/origin-
 
 ```json
 {
-  "$schema": "https://originrobot.dev/schemas/origin-app.json",
+  "$schema": "https://raw.githubusercontent.com/OriginRobotVerse/launcher/refs/heads/main/schemas/origin-app.schema.json",
   "name": "My Robot App",
   "id": "my-robot-app",
   "version": "0.1.0",
