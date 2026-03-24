@@ -6,6 +6,7 @@ dist
 __pycache__
 *.pyc
 .next
+out
 .out
 *.db
 *.db-*

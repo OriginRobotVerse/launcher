@@ -85,7 +85,7 @@ export default function HomePage() {
             {status.simulators!.running.map((sim) => (
               <Link
                 key={sim.deviceId}
-                href={`/simulators/${encodeURIComponent(sim.deviceId)}`}
+                href={`/simulators/detail?id=${encodeURIComponent(sim.deviceId)}`}
                 className="border border-wire bg-panel p-4 hover:border-wire-bright transition-colors block"
               >
                 <div className="flex items-center gap-2 mb-1">

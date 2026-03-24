@@ -1,16 +1,24 @@
 "use client";
 
-import { useCallback, useState } from "react";
-import { useParams, useRouter } from "next/navigation";
+import { Suspense, useCallback, useState } from "react";
+import { useSearchParams, useRouter } from "next/navigation";
 import { usePoll } from "@/lib/use-poll";
 import { getApp, getDevices, launchApp, uninstallApp } from "@/lib/origin-api";
 import { SecretForm } from "@/components/secret-form";
 import { CompatibilityBadge } from "@/components/compatibility-badge";
 
 export default function AppDetailPage() {
-  const params = useParams();
+  return (
+    <Suspense fallback={<div className="text-dim text-xs mt-12">Loading app...</div>}>
+      <AppDetailInner />
+    </Suspense>
+  );
+}
+
+function AppDetailInner() {
+  const searchParams = useSearchParams();
   const router = useRouter();
-  const appId = params.id as string;
+  const appId = searchParams.get("id") ?? "";
 
   const appFetcher = useCallback(() => getApp(appId), [appId]);
   const devicesFetcher = useCallback(() => getDevices(), []);
@@ -23,13 +31,17 @@ export default function AppDetailPage() {
   const [launching, setLaunching] = useState(false);
   const [showConfirmUninstall, setShowConfirmUninstall] = useState(false);
 
+  if (!appId) {
+    return <div className="text-dim text-xs mt-12">No app ID specified</div>;
+  }
+
   if (appLoading || !app) {
     return <div className="text-dim text-xs mt-12">Loading app...</div>;
   }
 
   // If running, redirect to running page
   if (app.running) {
-    router.push(`/apps/${encodeURIComponent(appId)}/running`);
+    router.push(`/apps/running?id=${encodeURIComponent(appId)}`);
     return null;
   }
 
@@ -44,7 +56,7 @@ export default function AppDetailPage() {
     setLaunching(true);
     try {
       await launchApp(appId, { deviceId: selectedDevice, mode });
-      router.push(`/apps/${encodeURIComponent(appId)}/running`);
+      router.push(`/apps/running?id=${encodeURIComponent(appId)}`);
     } catch (err) {
       console.error("Failed to launch:", err);
       setLaunching(false);

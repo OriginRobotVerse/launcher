@@ -1,14 +1,23 @@
 "use client";
 
-import { useParams, useRouter } from "next/navigation";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { Suspense, useCallback, useEffect, useRef, useState } from "react";
+import { useSearchParams, useRouter } from "next/navigation";
 import { usePoll } from "@/lib/use-poll";
 import { getSimulatorLogs, stopSimulator, getSimulators } from "@/lib/origin-api";
 import { StatusDot } from "@/components/status-dot";
 import { useDeviceSSE } from "@/lib/use-sse";
 
 export default function SimulatorDetailPage() {
-  const { deviceId } = useParams<{ deviceId: string }>();
+  return (
+    <Suspense fallback={<div className="text-dim text-xs mt-12">Loading simulator...</div>}>
+      <SimulatorDetailInner />
+    </Suspense>
+  );
+}
+
+function SimulatorDetailInner() {
+  const searchParams = useSearchParams();
+  const deviceId = searchParams.get("id") ?? "";
   const router = useRouter();
   const [autoScroll, setAutoScroll] = useState(true);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -37,6 +46,10 @@ export default function SimulatorDetailPage() {
       console.error("Failed to stop simulator:", err);
     }
   };
+
+  if (!deviceId) {
+    return <div className="text-dim text-xs mt-12">No simulator ID specified</div>;
+  }
 
   return (
     <div className="space-y-6">

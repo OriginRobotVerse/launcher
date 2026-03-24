@@ -36,7 +36,7 @@ export function RunningAppCard({ id, name, deviceId, frontendUrl, status, uptime
 
   return (
     <Link
-      href={`/apps/${encodeURIComponent(id)}/running`}
+      href={`/apps/running?id=${encodeURIComponent(id)}`}
       className="block border border-wire bg-panel p-4 hover:border-wire-bright hover:bg-panel-raised transition-colors"
     >
       <div className="flex items-center gap-2 mb-2">
