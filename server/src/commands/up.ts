@@ -254,49 +254,16 @@ export async function runUp(args: string[]): Promise<void> {
       if (!nextBin) {
         console.log("  dashboard    → next not found, skipping");
       } else {
-        // Check if dashboard is already built
-        const nextDir = resolve(dashboardDir, ".next");
-        const isBuilt = existsSync(nextDir);
-
-        // Dev mode: dashboard has its own node_modules (local development)
-        const isDev = existsSync(localNextBin);
-
-        if (isDev) {
-          // Dev mode — use next dev for hot reload
-          dashboardProcess = spawn(nextBin, ["dev", "-p", String(dashboardPort)], {
-            cwd: dashboardDir,
-            env: {
-              ...process.env,
-              NEXT_PUBLIC_ORIGIN_URL: `http://localhost:${port}`,
-              PORT: String(dashboardPort),
-            },
-            stdio: "pipe",
-          });
-          console.log(`  dashboard    → http://localhost:${dashboardPort} (dev)`);
-        } else {
-          // Production mode — build if needed, then next start
-          if (!isBuilt) {
-            console.log("  [dashboard] Building...");
-            spawnSync(nextBin, ["build"], {
-              cwd: dashboardDir,
-              env: {
-                ...process.env,
-                NEXT_PUBLIC_ORIGIN_URL: `http://localhost:${port}`,
-              },
-              stdio: "pipe",
-            });
-          }
-
-          dashboardProcess = spawn(nextBin, ["start", "-p", String(dashboardPort)], {
-            cwd: dashboardDir,
-            env: {
-              ...process.env,
-              PORT: String(dashboardPort),
-            },
-            stdio: "pipe",
-          });
-          console.log(`  dashboard    → http://localhost:${dashboardPort}`);
-        }
+        // Always use next dev — starts instantly, no build step needed
+        dashboardProcess = spawn(nextBin, ["dev", "-p", String(dashboardPort)], {
+          cwd: dashboardDir,
+          env: {
+            ...process.env,
+            NEXT_PUBLIC_ORIGIN_URL: `http://localhost:${port}`,
+            PORT: String(dashboardPort),
+          },
+          stdio: "pipe",
+        });
 
         dashboardProcess.stdout?.on("data", (d: Buffer) => {
           const text = String(d).trim();
@@ -306,6 +273,8 @@ export async function runUp(args: string[]): Promise<void> {
           const text = String(d).trim();
           if (text) process.stderr.write(`  [dashboard] ${text}\n`);
         });
+
+        console.log(`  dashboard    → http://localhost:${dashboardPort}`);
       }
     } else {
       console.log(`  dashboard    → not found (${dashboardDir})`);
@@ -345,6 +314,17 @@ export async function runUp(args: string[]): Promise<void> {
     await deviceManager.shutdown();
     if (dashboardProcess && !dashboardProcess.killed) {
       dashboardProcess.kill("SIGTERM");
+      // Force kill after 2s if it doesn't exit
+      const killTimer = setTimeout(() => {
+        if (dashboardProcess && !dashboardProcess.killed) {
+          dashboardProcess.kill("SIGKILL");
+        }
+      }, 2000);
+      await new Promise<void>((r) => {
+        if (dashboardProcess) dashboardProcess.on("exit", () => r());
+        else r();
+      });
+      clearTimeout(killTimer);
     }
     await new Promise<void>((resolve) => server.close(() => resolve()));
     console.log("[shutdown] Done.");
