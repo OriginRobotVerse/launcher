@@ -30,6 +30,19 @@ function toArray(val: string | string[] | undefined): string[] {
   return Array.isArray(val) ? val : [val];
 }
 
+// JSON config shape — plain values only, no code
+interface JsonConfig {
+  port?: number;
+  dashboardPort?: number;
+  tcp?: number | number[];
+  serial?: string | string[];
+  bluetooth?: string | string[];
+  baudRate?: number;
+  token?: string;
+  appsDir?: string;
+  dataDir?: string;
+}
+
 async function loadConfigFile(): Promise<OriginConfig | null> {
   const homeDir = process.env.HOME ?? process.env.USERPROFILE ?? "";
   const originDir = homeDir ? resolve(homeDir, ".origin") : null;
@@ -39,6 +52,32 @@ async function loadConfigFile(): Promise<OriginConfig | null> {
   if (originDir) searchDirs.push(originDir);
 
   for (const dir of searchDirs) {
+    // Try JSON config first (preferred for published package)
+    const jsonPath = resolve(dir, "origin.json");
+    if (existsSync(jsonPath)) {
+      try {
+        const raw: JsonConfig = JSON.parse(readFileSync(jsonPath, "utf-8"));
+        const dataDir = raw.dataDir ? resolve(dir, raw.dataDir) : undefined;
+        return {
+          port: raw.port,
+          dashboardPort: raw.dashboardPort,
+          tcp: raw.tcp,
+          serial: raw.serial,
+          bluetooth: raw.bluetooth,
+          baudRate: raw.baudRate,
+          token: raw.token,
+          appsDir: raw.appsDir ? resolve(dir, raw.appsDir) : undefined,
+          storage: dataDir
+            ? new SqliteStorageAdapter(resolve(dataDir, "origin.db"))
+            : undefined,
+        } as OriginConfig;
+      } catch (err) {
+        const message = err instanceof Error ? err.message : String(err);
+        console.error(`[config] Failed to load ${jsonPath}: ${message}`);
+      }
+    }
+
+    // Fall back to TS/JS config (for advanced use cases)
     for (const name of ["config.ts", "config.js"]) {
       const filePath = resolve(dir, name);
       if (!existsSync(filePath)) continue;
