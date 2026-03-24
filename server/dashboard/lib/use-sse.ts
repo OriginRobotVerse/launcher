@@ -2,7 +2,14 @@
 
 import { useEffect, useState } from "react";
 
-const ORIGIN_URL = process.env.NEXT_PUBLIC_ORIGIN_URL ?? "http://localhost:5050";
+function getOriginUrl(): string {
+  if (typeof window !== "undefined" && (window as any).__ORIGIN_URL__) {
+    return (window as any).__ORIGIN_URL__;
+  }
+  return process.env.NEXT_PUBLIC_ORIGIN_URL ?? "http://localhost:5050";
+}
+
+const ORIGIN_URL = getOriginUrl();
 
 export function useDeviceSSE(deviceId: string) {
   const [state, setState] = useState<Record<string, number>>({});
