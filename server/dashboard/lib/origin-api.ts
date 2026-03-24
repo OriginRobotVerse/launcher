@@ -10,16 +10,16 @@ import type {
   SimulatorLogsResponse,
 } from "./types";
 
-// Resolve at runtime in the browser:
-// 1. Check for build-time env var (dev mode with next dev)
-// 2. Fall back to http://localhost:5050 (default)
-// When served as a static export, NEXT_PUBLIC_ORIGIN_URL is baked in at build time.
-// The static server injects the correct URL via a script tag if needed.
+// Resolve API base URL at runtime.
+// In production the dashboard is served from the same origin as the API,
+// so an empty string (relative URLs) is correct.
+// In dev mode, set NEXT_PUBLIC_ORIGIN_URL to point at the API server.
 function getOriginUrl(): string {
-  if (typeof window !== "undefined" && (window as any).__ORIGIN_URL__) {
-    return (window as any).__ORIGIN_URL__;
+  if (typeof window !== "undefined") {
+    if ((window as any).__ORIGIN_URL__) return (window as any).__ORIGIN_URL__;
+    return ""; // same origin — dashboard is served by the API server
   }
-  return process.env.NEXT_PUBLIC_ORIGIN_URL ?? "http://localhost:5050";
+  return process.env.NEXT_PUBLIC_ORIGIN_URL ?? "";
 }
 
 const ORIGIN_URL = getOriginUrl();

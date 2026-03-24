@@ -3,10 +3,11 @@
 import { useEffect, useState } from "react";
 
 function getOriginUrl(): string {
-  if (typeof window !== "undefined" && (window as any).__ORIGIN_URL__) {
-    return (window as any).__ORIGIN_URL__;
+  if (typeof window !== "undefined") {
+    if ((window as any).__ORIGIN_URL__) return (window as any).__ORIGIN_URL__;
+    return ""; // same origin — dashboard is served by the API server
   }
-  return process.env.NEXT_PUBLIC_ORIGIN_URL ?? "http://localhost:5050";
+  return process.env.NEXT_PUBLIC_ORIGIN_URL ?? "";
 }
 
 const ORIGIN_URL = getOriginUrl();

@@ -1,6 +1,6 @@
 {
   "name": "originrobot",
-  "version": "0.5.0",
+  "version": "0.6.0",
   "description": "Origin — CLI tool for managing robots, installing apps, and serving a dashboard",
   "type": "module",
   "main": "dist/index.js",
@@ -10,43 +10,29 @@
   },
   "files": [
     "dist",
-    "dashboard/app",
-    "dashboard/components",
-    "dashboard/lib",
-    "dashboard/public",
-    "dashboard/package.json",
-    "dashboard/next.config.ts",
-    "dashboard/tsconfig.json",
-    "dashboard/postcss.config.mjs",
+    "dashboard/out",
     "scripts/postinstall.cjs",
     "simulators",
     "schemas"
   ],
   "scripts": {
     "build": "tsc && node -e \"const fs=require('fs'); const p='dist/cli.js'; const c=fs.readFileSync(p,'utf8'); if(!c.startsWith('#!')) fs.writeFileSync(p,'#!/usr/bin/env node\\n'+c);\"",
-    "build:dashboard": "cd dashboard && rm -rf .next && pnpm install && NEXT_PUBLIC_ORIGIN_URL=http://localhost:5050 pnpm build",
+    "build:dashboard": "cd dashboard && pnpm install && pnpm build",
     "start": "node dist/index.js",
     "dev": "tsx src/index.ts",
     "cli": "tsx src/cli.ts",
     "postinstall": "node scripts/postinstall.cjs",
-    "prepublishOnly": "rm -rf dashboard/.next && pnpm build"
+    "prepublishOnly": "pnpm build:dashboard && pnpm build"
   },
   "dependencies": {
-    "@tailwindcss/postcss": "^4",
-    "@types/node": "^20.0.0",
-    "@types/react": "^19",
-    "@types/react-dom": "^19",
     "better-sqlite3": "^12.8.0",
-    "next": "^16.1.6",
-    "react": "^19.1.0",
-    "react-dom": "^19.1.0",
-    "serialport": "^12.0.0",
-    "tailwindcss": "^4",
-    "typescript": "^5.4.0"
+    "serialport": "^12.0.0"
   },
   "devDependencies": {
     "@types/better-sqlite3": "^7.6.13",
-    "tsx": "^4.0.0"
+    "@types/node": "^20.0.0",
+    "tsx": "^4.0.0",
+    "typescript": "^5.4.0"
   },
   "engines": {
     "node": ">=20.0.0"

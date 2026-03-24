@@ -14,7 +14,7 @@ interface DeviceCardProps {
 export function DeviceCard({ id, type, displayName, connected, stateKeyCount, actionCount }: DeviceCardProps) {
   return (
     <Link
-      href={`/devices/${encodeURIComponent(id)}`}
+      href={`/devices/detail?id=${encodeURIComponent(id)}`}
       className="block border border-wire bg-panel p-4 hover:border-wire-bright hover:bg-panel-raised transition-colors"
     >
       <div className="flex items-center gap-2 mb-3">

@@ -37,7 +37,7 @@ export default function DevicesPage() {
           {devices.map((d) => (
             <Link
               key={d.id}
-              href={`/devices/${encodeURIComponent(d.id)}`}
+              href={`/devices/detail?id=${encodeURIComponent(d.id)}`}
               className="grid grid-cols-5 gap-4 px-4 py-3 border-b border-wire last:border-b-0 hover:bg-panel-raised transition-colors"
             >
               <span className="text-[11px] text-signal font-medium">{d.id}</span>
