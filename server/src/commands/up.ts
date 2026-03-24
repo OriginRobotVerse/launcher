@@ -1,4 +1,4 @@
-import { readFileSync, existsSync, readdirSync } from "node:fs";
+import { readFileSync, existsSync, readdirSync, mkdirSync } from "node:fs";
 import { resolve, dirname, join } from "node:path";
 import { pathToFileURL, fileURLToPath } from "node:url";
 import { spawn, spawnSync, exec, type ChildProcess } from "node:child_process";
@@ -10,6 +10,7 @@ import { WebhookManager } from "../webhooks.js";
 import { createOriginServer } from "../server.js";
 import { createAuthMiddleware } from "../auth.js";
 import { MemoryStorageAdapter } from "../storage.js";
+import { SqliteStorageAdapter } from "../storage-sqlite.js";
 import type { SSEEvent, OriginConfig } from "../types.js";
 
 interface UpFlags {
@@ -116,7 +117,10 @@ export async function runUp(args: string[]): Promise<void> {
   const serial = flags.serial.length > 0 ? flags.serial : toArray(fileConfig?.serial);
   const bluetooth = flags.bluetooth.length > 0 ? flags.bluetooth : toArray(fileConfig?.bluetooth);
   const tcp = flags.tcp.length > 0 ? flags.tcp : fileTcp;
-  const appsDir = fileConfig?.appsDir ?? "./apps";
+  // Default apps/data dir: use ~/.origin/ for global installs, ./apps for local dev
+  const homeDir = process.env.HOME ?? process.env.USERPROFILE ?? ".";
+  const defaultOriginDir = resolve(homeDir, ".origin");
+  const appsDir = fileConfig?.appsDir ?? resolve(defaultOriginDir, "apps");
 
   // Resolve the package root (server/) for bundled assets
   const __dir = typeof import.meta.dirname === "string"
@@ -125,8 +129,13 @@ export async function runUp(args: string[]): Promise<void> {
   // __dir is src/commands/ (dev) or dist/commands/ (built) — go up 2 levels to server/
   const packageRoot = resolve(__dir, "..", "..");
 
-  // Create managers
-  const storage = fileConfig?.storage ?? new MemoryStorageAdapter();
+  // Create managers — default to SQLite in ~/.origin/data/ for persistence
+  let storage = fileConfig?.storage;
+  if (!storage) {
+    const dataDir = resolve(defaultOriginDir, "data");
+    if (!existsSync(dataDir)) mkdirSync(dataDir, { recursive: true });
+    storage = new SqliteStorageAdapter(resolve(dataDir, "origin.db"));
+  }
   const deviceManager = new DeviceManager(storage);
   const appManager = new AppManager(storage, appsDir);
   const tcpPort = tcp.length > 0 ? tcp[0] : 5051;
