@@ -344,44 +344,58 @@ function findCommandOnPath(command: string): string | null {
  * Returns true if installation succeeded.
  */
 async function installDashboardDeps(dashboardDir: string): Promise<boolean> {
-  // Determine which package manager to use
-  const packageManagers = [
-    { cmd: "npm", args: ["install", "--production", "--no-audit", "--no-fund"] },
-    { cmd: "pnpm", args: ["install", "--prod"] },
-    { cmd: "yarn", args: ["install", "--production"] },
+  // Detect package manager: check lockfiles in dashboard dir, then parent dirs
+  const pmConfigs = [
+    { cmd: "pnpm", args: ["install", "--prod"], lockfile: "pnpm-lock.yaml" },
+    { cmd: "npm", args: ["install", "--production", "--no-audit", "--no-fund"], lockfile: "package-lock.json" },
   ];
 
-  for (const pm of packageManagers) {
-    const found = findCommandOnPath(pm.cmd);
-    if (!found) continue;
-
-    try {
-      console.log(`  [dashboard] Running ${pm.cmd} install...`);
-      const result = spawnSync(pm.cmd, pm.args, {
-        cwd: dashboardDir,
-        encoding: "utf-8",
-        timeout: 120000,
-        stdio: ["pipe", "pipe", "pipe"],
-        shell: process.platform === "win32",
-      });
-
-      if (result.status === 0) {
-        console.log("  [dashboard] Dependencies installed successfully.");
-        return true;
+  // Check which PM has a lockfile (prefer pnpm > npm)
+  let detected: typeof pmConfigs[0] | null = null;
+  for (const pm of pmConfigs) {
+    // Check dashboard dir and parent dirs for lockfile
+    let dir = dashboardDir;
+    const root = resolve("/");
+    while (dir !== root) {
+      if (existsSync(resolve(dir, pm.lockfile))) {
+        detected = pm;
+        break;
       }
-
-      // Log stderr if install failed but don't give up — try the next package manager
-      if (result.stderr) {
-        const errLines = result.stderr.trim().split("\n").slice(0, 5).join("\n");
-        console.error(`  [dashboard] ${pm.cmd} install failed:\n${errLines}`);
-      }
-    } catch (err) {
-      const msg = err instanceof Error ? err.message : String(err);
-      console.error(`  [dashboard] ${pm.cmd} install error: ${msg}`);
+      const parent = dirname(dir);
+      if (parent === dir) break;
+      dir = parent;
     }
+    if (detected) break;
   }
 
-  console.error("  [dashboard] Could not install dependencies with any package manager.");
+  // Fall back to npm if no lockfile found
+  if (!detected) detected = pmConfigs[1];
+
+  try {
+    console.log(`  [dashboard] Running ${detected.cmd} install...`);
+    const result = spawnSync(detected.cmd, detected.args, {
+      cwd: dashboardDir,
+      encoding: "utf-8",
+      timeout: 120000,
+      stdio: ["pipe", "pipe", "pipe"],
+      shell: process.platform === "win32",
+    });
+
+    if (result.status === 0) {
+      console.log("  [dashboard] Dependencies installed successfully.");
+      return true;
+    }
+
+    if (result.stderr) {
+      const errLines = result.stderr.trim().split("\n").slice(0, 5).join("\n");
+      console.error(`  [dashboard] ${detected.cmd} install failed:\n${errLines}`);
+    }
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    console.error(`  [dashboard] ${detected.cmd} install error: ${msg}`);
+  }
+
+  console.error("  [dashboard] Could not install dependencies.");
   return false;
 }
 
