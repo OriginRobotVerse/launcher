@@ -29,7 +29,7 @@
     "dev": "tsx src/index.ts",
     "cli": "tsx src/cli.ts",
     "postinstall": "node scripts/postinstall.cjs",
-    "prepublishOnly": "pnpm build"
+    "prepublishOnly": "rm -rf dashboard/.next && pnpm build"
   },
   "dependencies": {
     "better-sqlite3": "^12.8.0",
