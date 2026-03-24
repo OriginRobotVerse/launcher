@@ -125,6 +125,141 @@ export interface StorageAdapter {
   setWebhook(id: string, webhook: Webhook): Promise<void>;
   removeWebhook(id: string): Promise<void>;
   listWebhooks(): Promise<Webhook[]>;
+
+  // Apps
+  getApp(id: string): Promise<StoredApp | null>;
+  setApp(id: string, app: StoredApp): Promise<void>;
+  removeApp(id: string): Promise<void>;
+  listApps(): Promise<StoredApp[]>;
+
+  // App secrets
+  getAppSecrets(appId: string): Promise<Record<string, string>>;
+  setAppSecrets(appId: string, secrets: Record<string, string>): Promise<void>;
+
+  // Device profiles
+  getProfile(deviceId: string): Promise<DeviceProfile | null>;
+  setProfile(deviceId: string, profile: DeviceProfile): Promise<void>;
+  removeProfile(deviceId: string): Promise<void>;
+  listProfiles(): Promise<DeviceProfile[]>;
+}
+
+// --- App manifest (origin-app.json) ---
+
+export type DeviceType = "wheeled" | "quadruped" | "humanoid" | "arm" | "generic";
+
+export interface AppManifestDevice {
+  type: DeviceType;
+  requiredActions?: string[];
+  requiredState?: string[];
+  optionalActions?: string[];
+  optionalState?: string[];
+  minActuators?: number | null;
+  maxActuators?: number | null;
+}
+
+export interface AppManifestRuntime {
+  type: string;
+  entry: string;
+  setupCmd?: string;
+  buildCmd?: string;
+  devCmd?: string;
+  startCmd?: string;
+  port: number;
+  env?: Record<string, string>;
+  healthCheck?: string;
+}
+
+export interface AppManifestBackend {
+  type: string;
+  entry: string;
+  setupCmd?: string;
+  installCmd?: string;
+  args?: string[];
+  port: number;
+  env?: Record<string, string>;
+  healthCheck?: string;
+}
+
+export interface AppManifestSecret {
+  key: string;
+  description: string;
+  required: boolean;
+}
+
+export interface AppManifest {
+  name: string;
+  id: string;
+  version: string;
+  author?: string;
+  description?: string;
+  icon?: string;
+  setup?: string;
+  device: AppManifestDevice;
+  runtime: AppManifestRuntime;
+  backend?: AppManifestBackend;
+  secrets?: AppManifestSecret[];
+}
+
+// --- Device profiles ---
+
+export interface JointGroup {
+  label: string;
+  keys: string[];
+  actuatorIndices?: number[];
+}
+
+export interface DeviceProfile {
+  deviceId: string;
+  type: DeviceType;
+  displayName: string;
+  description: string;
+  stateGroups: JointGroup[];
+  capabilities: {
+    positionControl: boolean;
+    torqueControl: boolean;
+    locomotion: boolean;
+    manipulation: boolean;
+  };
+  actionAliases?: Record<string, string>;
+  needsConfiguration?: boolean;
+}
+
+// --- Installed / Running app types ---
+
+export interface InstalledApp {
+  manifest: AppManifest;
+  installPath: string;
+  installedAt: string;
+  secrets: Record<string, string>;
+}
+
+export interface RunningApp {
+  id: string;
+  manifest: AppManifest;
+  deviceId: string;
+  frontendProcess: import("node:child_process").ChildProcess | null;
+  backendProcess: import("node:child_process").ChildProcess | null;
+  frontendUrl: string;
+  backendUrl: string | null;
+  status: "starting" | "running" | "stopping" | "stopped" | "error";
+  error?: string;
+  startedAt: Date;
+  logs: string[];
+}
+
+export interface CompatResult {
+  compatible: boolean;
+  missingActions: string[];
+  missingState: string[];
+  warnings: string[];
+}
+
+// --- Storage adapter (extended) ---
+
+export interface StoredApp {
+  manifest: AppManifest;
+  installPath: string;
+  installedAt: string;
 }
 
 // --- Config file (config.ts in cwd) ---
@@ -134,15 +269,18 @@ export interface OriginConfig {
   bluetooth?: string | string[];
   tcp?: number | number[];
   port?: number;
+  dashboardPort?: number;
   baudRate?: number;
   token?: string;
   webhooks?: WebhookRegistration[];
   storage?: StorageAdapter;
+  appsDir?: string;
 }
 
 export function defineConfig(config: OriginConfig = {}): OriginConfig {
   return {
-    port: 3000,
+    port: 5050,
+    dashboardPort: 5051,
     baudRate: 9600,
     ...config,
   };

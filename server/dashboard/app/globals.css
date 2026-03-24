@@ -1,0 +1,61 @@
+@import "tailwindcss";
+
+:root {
+  --void: #0a0a0a;
+  --panel: #111111;
+  --panel-raised: #161616;
+  --wire: #1e1e1e;
+  --wire-bright: #2a2a2a;
+  --signal: #e8e8e8;
+  --dim: #737373;
+  --dim-dark: #4a4a4a;
+  --phosphor: #f59e0b;
+  --phosphor-bright: #fbbf24;
+  --phosphor-dim: #92400e;
+  --phosphor-glow: rgba(245, 158, 11, 0.08);
+  --phosphor-glow-strong: rgba(245, 158, 11, 0.15);
+}
+
+@theme inline {
+  --color-void: var(--void);
+  --color-panel: var(--panel);
+  --color-panel-raised: var(--panel-raised);
+  --color-wire: var(--wire);
+  --color-wire-bright: var(--wire-bright);
+  --color-signal: var(--signal);
+  --color-dim: var(--dim);
+  --color-dim-dark: var(--dim-dark);
+  --color-phosphor: var(--phosphor);
+  --color-phosphor-bright: var(--phosphor-bright);
+  --color-phosphor-dim: var(--phosphor-dim);
+  --color-phosphor-glow: var(--phosphor-glow);
+  --color-phosphor-glow-strong: var(--phosphor-glow-strong);
+}
+
+* {
+  border-radius: 0 !important;
+}
+
+body {
+  background: var(--void);
+  color: var(--signal);
+  font-family: "JetBrains Mono", "Fira Code", "SF Mono", "Cascadia Code", monospace;
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--void);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--wire-bright);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--dim-dark);
+}

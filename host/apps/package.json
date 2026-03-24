@@ -1,12 +1,12 @@
 {
-  "name": "@aorigin/apps",
+  "name": "originrobot-apps",
   "private": true,
   "type": "module",
   "dependencies": {
-    "@aorigin/core": "*",
-    "@aorigin/launcher": "*",
-    "@aorigin/transport-serial": "*",
-    "@aorigin/transport-bluetooth": "*"
+    "originrobot-core": "*",
+    "originrobot-launcher": "*",
+    "originrobot-transport-serial": "*",
+    "originrobot-transport-bluetooth": "*"
   },
   "devDependencies": {
     "tsx": "^4.7.0",

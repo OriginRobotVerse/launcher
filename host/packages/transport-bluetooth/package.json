@@ -1,5 +1,5 @@
 {
-  "name": "@aorigin/transport-bluetooth",
+  "name": "originrobot-transport-bluetooth",
   "version": "0.1.0",
   "type": "module",
   "main": "dist/index.js",
@@ -11,7 +11,7 @@
     "serialport": "^12.0.0"
   },
   "devDependencies": {
-    "@aorigin/core": "*",
+    "originrobot-core": "*",
     "typescript": "^5.4.0"
   }
 }

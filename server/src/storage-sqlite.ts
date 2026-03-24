@@ -1,5 +1,5 @@
 import Database from "better-sqlite3";
-import type { StorageAdapter, StoredDevice, Webhook } from "./types.js";
+import type { StorageAdapter, StoredDevice, Webhook, StoredApp, DeviceProfile } from "./types.js";
 
 export class SqliteStorageAdapter implements StorageAdapter {
   private db: Database.Database;
@@ -26,6 +26,25 @@ export class SqliteStorageAdapter implements StorageAdapter {
         events TEXT NOT NULL,
         created_at TEXT NOT NULL,
         secret TEXT
+      );
+
+      CREATE TABLE IF NOT EXISTS apps (
+        id TEXT PRIMARY KEY,
+        manifest TEXT NOT NULL,
+        install_path TEXT NOT NULL,
+        installed_at TEXT NOT NULL
+      );
+
+      CREATE TABLE IF NOT EXISTS app_secrets (
+        app_id TEXT NOT NULL,
+        key TEXT NOT NULL,
+        value TEXT NOT NULL,
+        PRIMARY KEY (app_id, key)
+      );
+
+      CREATE TABLE IF NOT EXISTS device_profiles (
+        device_id TEXT PRIMARY KEY,
+        profile TEXT NOT NULL
       );
     `);
   }
@@ -120,5 +139,97 @@ export class SqliteStorageAdapter implements StorageAdapter {
       createdAt: row.created_at,
       secret: row.secret ?? undefined,
     }));
+  }
+
+  // --- Apps ---
+
+  async getApp(id: string): Promise<StoredApp | null> {
+    const row = this.db.prepare("SELECT * FROM apps WHERE id = ?").get(id) as any;
+    if (!row) return null;
+    return {
+      manifest: JSON.parse(row.manifest),
+      installPath: row.install_path,
+      installedAt: row.installed_at,
+    };
+  }
+
+  async setApp(id: string, app: StoredApp): Promise<void> {
+    this.db.prepare(`
+      INSERT INTO apps (id, manifest, install_path, installed_at)
+      VALUES (?, ?, ?, ?)
+      ON CONFLICT(id) DO UPDATE SET
+        manifest = excluded.manifest,
+        install_path = excluded.install_path,
+        installed_at = excluded.installed_at
+    `).run(
+      id,
+      JSON.stringify(app.manifest),
+      app.installPath,
+      app.installedAt,
+    );
+  }
+
+  async removeApp(id: string): Promise<void> {
+    this.db.prepare("DELETE FROM apps WHERE id = ?").run(id);
+    this.db.prepare("DELETE FROM app_secrets WHERE app_id = ?").run(id);
+  }
+
+  async listApps(): Promise<StoredApp[]> {
+    const rows = this.db.prepare("SELECT * FROM apps").all() as any[];
+    return rows.map((row) => ({
+      manifest: JSON.parse(row.manifest),
+      installPath: row.install_path,
+      installedAt: row.installed_at,
+    }));
+  }
+
+  // --- App Secrets ---
+
+  async getAppSecrets(appId: string): Promise<Record<string, string>> {
+    const rows = this.db.prepare("SELECT key, value FROM app_secrets WHERE app_id = ?").all(appId) as any[];
+    const secrets: Record<string, string> = {};
+    for (const row of rows) {
+      secrets[row.key] = row.value;
+    }
+    return secrets;
+  }
+
+  async setAppSecrets(appId: string, secrets: Record<string, string>): Promise<void> {
+    const stmt = this.db.prepare(`
+      INSERT INTO app_secrets (app_id, key, value)
+      VALUES (?, ?, ?)
+      ON CONFLICT(app_id, key) DO UPDATE SET value = excluded.value
+    `);
+    const transaction = this.db.transaction(() => {
+      for (const [key, value] of Object.entries(secrets)) {
+        stmt.run(appId, key, value);
+      }
+    });
+    transaction();
+  }
+
+  // --- Device Profiles ---
+
+  async getProfile(deviceId: string): Promise<DeviceProfile | null> {
+    const row = this.db.prepare("SELECT * FROM device_profiles WHERE device_id = ?").get(deviceId) as any;
+    if (!row) return null;
+    return JSON.parse(row.profile);
+  }
+
+  async setProfile(deviceId: string, profile: DeviceProfile): Promise<void> {
+    this.db.prepare(`
+      INSERT INTO device_profiles (device_id, profile)
+      VALUES (?, ?)
+      ON CONFLICT(device_id) DO UPDATE SET profile = excluded.profile
+    `).run(deviceId, JSON.stringify(profile));
+  }
+
+  async removeProfile(deviceId: string): Promise<void> {
+    this.db.prepare("DELETE FROM device_profiles WHERE device_id = ?").run(deviceId);
+  }
+
+  async listProfiles(): Promise<DeviceProfile[]> {
+    const rows = this.db.prepare("SELECT * FROM device_profiles").all() as any[];
+    return rows.map((row) => JSON.parse(row.profile));
   }
 }

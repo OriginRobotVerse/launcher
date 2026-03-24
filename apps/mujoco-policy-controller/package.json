@@ -1,5 +1,5 @@
 {
-  "name": "@aorigin/mujoco-policy-controller",
+  "name": "originrobot-mujoco-policy-controller",
   "version": "0.1.0",
   "private": true,
   "scripts": {

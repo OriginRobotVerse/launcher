@@ -60,14 +60,14 @@ function ArrowIcon() {
 }
 
 const tickerItems = [
-  'registerSensor("ultrasonic", pins, 2, readDistance)',
-  "origin.tick()",
-  'await ctx.send("moveFwd")',
-  "const readings = await ctx.read()",
-  'registerAction("stop", stop)',
-  "setTransport(new BluetoothAdapter())",
-  "readings.distance < 10",
-  'runModel("choreography", inputs)',
+  'npx originrobot up',
+  'origin install github.com/user/app',
+  'origin launch agent-ctrl --device toy-car',
+  "origin devices",
+  'origin status',
+  "origin secrets set app KEY value",
+  "GET /devices/:id/state",
+  "POST /devices/:id/actions",
 ];
 
 export default function LandingPage() {
@@ -148,11 +148,11 @@ export default function LandingPage() {
           <a href="#how" onClick={() => setNavOpen(false)}>
             How
           </a>
-          <a href="#appstore" onClick={() => setNavOpen(false)}>
-            App Store
+          <a href="#apps" onClick={() => setNavOpen(false)}>
+            Apps
           </a>
           <a
-            href="https://github.com"
+            href="https://github.com/OriginRobotVerse/launcher"
             target="_blank"
             rel="noopener noreferrer"
             onClick={() => setNavOpen(false)}
@@ -213,16 +213,21 @@ export default function LandingPage() {
             <span>Control anything.</span>
           </h1>
           <p className="hero-sub">
-            Origin is the runtime that sits between your TypeScript and any
-            physical device — from Arduinos to robot dogs to humanoids. Flash
-            the firmware once. Write apps forever.
+            Origin is the open-source platform for controlling robots and hardware devices.
+            One CLI to manage devices, install apps, and launch control interfaces — from
+            Arduinos to simulated quadrupeds to humanoids.
           </p>
           <div className="hero-actions">
-            <div className="btn-primary">
-              <span>Origin App Store — Coming Soon</span>
-            </div>
-            <a className="btn-secondary" href="#how">
-              <span>How it works</span>
+            <a className="btn-primary" href="#how">
+              <span>Get Started</span>
+            </a>
+            <a
+              className="btn-secondary"
+              href="https://github.com/OriginRobotVerse/launcher"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              <span>GitHub</span>
               <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
                 <line x1="3" y1="7" x2="11" y2="7" stroke="currentColor" strokeWidth="1.5" />
                 <line x1="8" y1="4" x2="11" y2="7" stroke="currentColor" strokeWidth="1.5" />
@@ -233,7 +238,7 @@ export default function LandingPage() {
         </div>
 
         <div className="hero-tag">
-          <span>Arduino · Unitree Go2 · Unitree H1 · ESP32 · Raspberry Pi · More</span>
+          <span>Arduino · Unitree Go2 · Unitree G1 · MuJoCo Simulator · ESP32 · More</span>
         </div>
       </section>
 
@@ -261,53 +266,51 @@ export default function LandingPage() {
           <div className="reveal">
             <div className="section-label">01 — What</div>
             <h2 className="section-title">
-              Control anything
+              One platform for all your robots
             </h2>
             <p className="section-desc">
-              Every robot, every microcontroller, every physical device follows
-              the same loop: setup, sense, act, repeat. Origin is a thin runtime
-              that standardizes this loop so you can write the logic that matters
-              — in TypeScript, on your machine — while the device handles the
-              physics.
+              Origin is a CLI + dashboard for managing hardware devices and the
+              apps that control them. Connect over Bluetooth, Serial, or TCP.
+              Install apps from GitHub. Launch control interfaces with one command.
+              Everything goes through a unified REST API.
             </p>
           </div>
 
           <div className="what-grid">
             <div className="what-card reveal reveal-delay-1">
               <div className="wc-number">01</div>
-              <div className="wc-title">Firmware SDK</div>
+              <div className="wc-title">CLI + Dashboard</div>
               <div className="wc-text">
-                A C++ library that runs on the device. Register your sensors,
-                chips, and actions. Sensors auto-poll every tick. Actions persist
-                until overridden. The entire loop is one call: origin.tick()
+                One command — <code>origin up</code> — starts the core server and a
+                full Next.js dashboard. Manage devices, install apps, configure
+                secrets, and launch controllers from the terminal or the browser.
               </div>
             </div>
             <div className="what-card reveal reveal-delay-2">
               <div className="wc-number">02</div>
-              <div className="wc-title">Host Runtime</div>
+              <div className="wc-title">Device Management</div>
               <div className="wc-text">
-                A TypeScript server on your machine. Loads and runs apps that
-                read sensor data and send actions to the device. The launcher
-                owns the loop — your app is a clean module with setup, loop, and
-                teardown.
+                Connect hardware over Bluetooth, USB Serial, or TCP. Each device
+                auto-registers its sensors, actions, and state schema. Built-in
+                profiles for Unitree Go2, G1, and Arduino. Live state via SSE.
               </div>
             </div>
             <div className="what-card reveal reveal-delay-3">
               <div className="wc-number">03</div>
-              <div className="wc-title">Pluggable Transport</div>
+              <div className="wc-title">App Platform</div>
               <div className="wc-text">
-                Bluetooth, WiFi, USB Serial — swap the adapter and everything
-                upstream stays identical. JSON on the wire for v1. The firmware
-                doesn&apos;t care how the action arrived.
+                Apps are directories with an origin-app.json manifest. They declare
+                device requirements, frontend runtime, optional backend, and secrets.
+                Install from GitHub, launch against any compatible device.
               </div>
             </div>
             <div className="what-card reveal reveal-delay-4">
               <div className="wc-number">04</div>
-              <div className="wc-title">App Ecosystem</div>
+              <div className="wc-title">Simulator Support</div>
               <div className="wc-text">
-                Share apps with the community. An obstacle avoider, a gesture
-                controller, an ML choreography engine — install it, point it at
-                your device, run it. Origin App Store coming soon.
+                Built-in MuJoCo simulator integration. Start simulated quadrupeds
+                and humanoids from the dashboard. Test your apps against physics
+                simulations before deploying to real hardware.
               </div>
             </div>
           </div>
@@ -319,12 +322,11 @@ export default function LandingPage() {
         <div className="container">
           <div className="reveal">
             <div className="section-label">02 — Devices</div>
-            <h2 className="section-title">One runtime. Any device.</h2>
+            <h2 className="section-title">From microcontrollers to humanoids.</h2>
             <p className="section-desc">
-              Origin isn&apos;t just for Arduinos. Any device that can run a
-              firmware loop and communicate over a transport adapter is an Origin
-              device. From microcontrollers to quadruped robots to full
-              humanoids.
+              Any device that communicates over a transport adapter is an Origin
+              device. Connect real hardware or launch MuJoCo simulations — your
+              apps work with both.
             </p>
           </div>
 
@@ -344,31 +346,11 @@ export default function LandingPage() {
                 </svg>
               </div>
               <div className="dc-name">Arduino</div>
-              <div className="dc-type">Microcontroller</div>
-              <div className="dc-status live">v1</div>
+              <div className="dc-type">Bluetooth / Serial</div>
+              <div className="dc-status live">Live</div>
             </div>
 
             <div className="device-card reveal reveal-delay-2">
-              <div className="dc-icon">
-                <svg viewBox="0 0 64 64" fill="none" width="56" height="56">
-                  <rect x="12" y="18" width="40" height="28" stroke="#E8E8E8" strokeWidth="1.5" fill="none" />
-                  <rect x="22" y="26" width="20" height="12" stroke="#4A4A4A" strokeWidth="1" fill="none" />
-                  <rect x="28" y="30" width="8" height="4" fill="#F59E0B" opacity="0.3" />
-                  <line x1="32" y1="14" x2="32" y2="10" stroke="#F59E0B" strokeWidth="1" opacity="0.4" />
-                  <line x1="26" y1="12" x2="32" y2="8" stroke="#F59E0B" strokeWidth="1" opacity="0.3" />
-                  <line x1="38" y1="12" x2="32" y2="8" stroke="#F59E0B" strokeWidth="1" opacity="0.3" />
-                  <line x1="16" y1="46" x2="16" y2="50" stroke="#E8E8E8" strokeWidth="1.5" />
-                  <line x1="24" y1="46" x2="24" y2="50" stroke="#E8E8E8" strokeWidth="1.5" />
-                  <line x1="40" y1="46" x2="40" y2="50" stroke="#E8E8E8" strokeWidth="1.5" />
-                  <line x1="48" y1="46" x2="48" y2="50" stroke="#E8E8E8" strokeWidth="1.5" />
-                </svg>
-              </div>
-              <div className="dc-name">ESP32</div>
-              <div className="dc-type">Microcontroller + WiFi</div>
-              <div className="dc-status live">v1</div>
-            </div>
-
-            <div className="device-card reveal reveal-delay-3">
               <div className="dc-icon">
                 <svg viewBox="0 0 64 64" fill="none" width="56" height="56">
                   <rect x="14" y="20" width="36" height="16" stroke="#E8E8E8" strokeWidth="1.5" fill="none" />
@@ -385,11 +367,11 @@ export default function LandingPage() {
                 </svg>
               </div>
               <div className="dc-name">Unitree Go2</div>
-              <div className="dc-type">Quadruped Robot</div>
-              <div className="dc-status soon">Coming</div>
+              <div className="dc-type">12-DOF Quadruped</div>
+              <div className="dc-status live">Live</div>
             </div>
 
-            <div className="device-card reveal reveal-delay-4">
+            <div className="device-card reveal reveal-delay-3">
               <div className="dc-icon">
                 <svg viewBox="0 0 64 64" fill="none" width="56" height="56">
                   <rect x="24" y="4" width="16" height="12" stroke="#E8E8E8" strokeWidth="1.5" fill="none" />
@@ -408,9 +390,29 @@ export default function LandingPage() {
                   <line x1="40" y1="56" x2="44" y2="58" stroke="#E8E8E8" strokeWidth="1.5" />
                 </svg>
               </div>
-              <div className="dc-name">Unitree H1</div>
-              <div className="dc-type">Humanoid Robot</div>
-              <div className="dc-status soon">Coming</div>
+              <div className="dc-name">Unitree G1</div>
+              <div className="dc-type">23-DOF Humanoid</div>
+              <div className="dc-status live">Live</div>
+            </div>
+
+            <div className="device-card reveal reveal-delay-4">
+              <div className="dc-icon">
+                <svg viewBox="0 0 64 64" fill="none" width="56" height="56">
+                  <rect x="12" y="18" width="40" height="28" stroke="#E8E8E8" strokeWidth="1.5" fill="none" />
+                  <rect x="22" y="26" width="20" height="12" stroke="#4A4A4A" strokeWidth="1" fill="none" />
+                  <rect x="28" y="30" width="8" height="4" fill="#F59E0B" opacity="0.3" />
+                  <line x1="32" y1="14" x2="32" y2="10" stroke="#F59E0B" strokeWidth="1" opacity="0.4" />
+                  <line x1="26" y1="12" x2="32" y2="8" stroke="#F59E0B" strokeWidth="1" opacity="0.3" />
+                  <line x1="38" y1="12" x2="32" y2="8" stroke="#F59E0B" strokeWidth="1" opacity="0.3" />
+                  <line x1="16" y1="46" x2="16" y2="50" stroke="#E8E8E8" strokeWidth="1.5" />
+                  <line x1="24" y1="46" x2="24" y2="50" stroke="#E8E8E8" strokeWidth="1.5" />
+                  <line x1="40" y1="46" x2="40" y2="50" stroke="#E8E8E8" strokeWidth="1.5" />
+                  <line x1="48" y1="46" x2="48" y2="50" stroke="#E8E8E8" strokeWidth="1.5" />
+                </svg>
+              </div>
+              <div className="dc-name">MuJoCo Sim</div>
+              <div className="dc-type">Physics Simulator</div>
+              <div className="dc-status live">Live</div>
             </div>
           </div>
         </div>
@@ -421,21 +423,21 @@ export default function LandingPage() {
         <div className="container">
           <div className="reveal">
             <div className="section-label">03 — How</div>
-            <h2 className="section-title">Flash once. Build forever.</h2>
+            <h2 className="section-title">Three commands to control a robot.</h2>
             <p className="section-desc">
-              Origin separates the hardware loop from your application logic. The
-              device runs the physics — your code runs the brain.
+              Origin separates device management from application logic. The
+              server manages connections — your apps provide the brains.
             </p>
           </div>
 
           <div className="flow-steps reveal">
             <div className="flow-step">
               <div className="fs-number">01</div>
-              <div className="fs-title">Flash the firmware</div>
+              <div className="fs-title">Start Origin</div>
               <div className="fs-text">
-                Register your sensors, chips, and actions. Set a transport
-                adapter. The device runs origin.tick() in a loop forever. You
-                never touch the firmware again.
+                Run <code>npx originrobot up</code> to start the core server and
+                dashboard. Devices connect over Bluetooth, Serial, or TCP. The
+                MuJoCo simulator can be launched from the dashboard.
               </div>
             </div>
             <div className="flow-arrow">
@@ -443,11 +445,12 @@ export default function LandingPage() {
             </div>
             <div className="flow-step">
               <div className="fs-number">02</div>
-              <div className="fs-title">Write your app</div>
+              <div className="fs-title">Install an app</div>
               <div className="fs-text">
-                A TypeScript module with a loop function. Read sensor data, make
-                decisions, send actions. Use ML, call APIs, run inference —
-                anything your host machine can do.
+                Run <code>origin install github.com/user/app</code> or install
+                from the dashboard. Apps are directories with an origin-app.json
+                manifest — they declare what devices they support and what they need
+                to run.
               </div>
             </div>
             <div className="flow-arrow">
@@ -457,95 +460,104 @@ export default function LandingPage() {
               <div className="fs-number">03</div>
               <div className="fs-title">Launch</div>
               <div className="fs-text">
-                The launcher connects to your device, starts your app loop, and
-                relays readings and actions in real time. Swap apps on the fly —
-                no reflashing.
+                Run <code>origin launch my-app --device go2</code> or click Launch
+                in the dashboard. Origin spawns the app, connects it to the device,
+                and you get a live control interface.
               </div>
             </div>
           </div>
 
-          {/* Code sample */}
+          {/* Code sample — origin-app.json manifest */}
           <div className="code-section reveal" style={{ marginTop: 64 }}>
             <div className="code-panel">
               <div className="code-header">
                 <div className="code-dot" style={{ background: "var(--phosphor)" }} />
-                <div className="code-filename">obstacle-avoider.ts</div>
+                <div className="code-filename">origin-app.json</div>
               </div>
               <div className="code-body">
-                <span className="kw">import</span> {"{ OriginApp }"}{" "}
-                <span className="kw">from</span>{" "}
-                <span className="str">&quot;@origin/core&quot;</span>
+                {"{"}
+                <br />
+                &nbsp;&nbsp;<span className="str">&quot;name&quot;</span>:{" "}
+                <span className="str">&quot;My Robot Controller&quot;</span>,
+                <br />
+                &nbsp;&nbsp;<span className="str">&quot;id&quot;</span>:{" "}
+                <span className="str">&quot;my-controller&quot;</span>,
+                <br />
+                &nbsp;&nbsp;<span className="str">&quot;version&quot;</span>:{" "}
+                <span className="str">&quot;0.1.0&quot;</span>,
                 <br /><br />
-                <span className="kw">const</span>{" "}
-                <span className="fn">app</span>: OriginApp = {"{"}
+                &nbsp;&nbsp;<span className="str">&quot;device&quot;</span>: {"{"}
                 <br />
-                &nbsp;&nbsp;name:{" "}
-                <span className="str">&quot;obstacle-avoider&quot;</span>,
+                &nbsp;&nbsp;&nbsp;&nbsp;<span className="str">&quot;type&quot;</span>:{" "}
+                <span className="str">&quot;quadruped&quot;</span>,
+                <br />
+                &nbsp;&nbsp;&nbsp;&nbsp;<span className="str">&quot;requiredActions&quot;</span>:{" "}
+                [<span className="str">&quot;set_pos&quot;</span>,{" "}
+                <span className="str">&quot;reset&quot;</span>],
+                <br />
+                &nbsp;&nbsp;&nbsp;&nbsp;<span className="str">&quot;requiredState&quot;</span>:{" "}
+                [<span className="str">&quot;body_z&quot;</span>]
+                <br />
+                &nbsp;&nbsp;{"}"},
                 <br /><br />
-                &nbsp;&nbsp;<span className="kw">async</span>{" "}
-                <span className="fn">loop</span>(ctx) {"{"}
+                &nbsp;&nbsp;<span className="str">&quot;runtime&quot;</span>: {"{"}
                 <br />
-                &nbsp;&nbsp;&nbsp;&nbsp;<span className="kw">const</span> readings ={" "}
-                <span className="kw">await</span> ctx.<span className="fn">read</span>()
+                &nbsp;&nbsp;&nbsp;&nbsp;<span className="str">&quot;type&quot;</span>:{" "}
+                <span className="str">&quot;nextjs&quot;</span>,
+                <br />
+                &nbsp;&nbsp;&nbsp;&nbsp;<span className="str">&quot;port&quot;</span>:{" "}
+                <span className="num">3001</span>
+                <br />
+                &nbsp;&nbsp;{"}"},
                 <br /><br />
-                &nbsp;&nbsp;&nbsp;&nbsp;<span className="kw">if</span> (readings.distance &lt;{" "}
-                <span className="num">10</span>) {"{"}
+                &nbsp;&nbsp;<span className="str">&quot;secrets&quot;</span>: [{"{"}
                 <br />
-                &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span className="kw">await</span> ctx.
-                <span className="fn">send</span>(<span className="str">&quot;moveBkwd&quot;</span>)
+                &nbsp;&nbsp;&nbsp;&nbsp;<span className="str">&quot;key&quot;</span>:{" "}
+                <span className="str">&quot;OPENROUTER_API_KEY&quot;</span>,
                 <br />
-                &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span className="kw">await</span> ctx.
-                <span className="fn">send</span>(<span className="str">&quot;turnRight&quot;</span>)
+                &nbsp;&nbsp;&nbsp;&nbsp;<span className="str">&quot;required&quot;</span>:{" "}
+                <span className="kw">true</span>
                 <br />
-                &nbsp;&nbsp;&nbsp;&nbsp;{"}"} <span className="kw">else</span> {"{"}
-                <br />
-                &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span className="kw">await</span> ctx.
-                <span className="fn">send</span>(<span className="str">&quot;moveFwd&quot;</span>)
-                <br />
-                &nbsp;&nbsp;&nbsp;&nbsp;{"}"}
-                <br />
-                &nbsp;&nbsp;{"}"}
+                &nbsp;&nbsp;{"}"}]
                 <br />
                 {"}"}
-                <br /><br />
-                <span className="kw">export default</span> app
               </div>
             </div>
             <div className="code-desc">
-              <div className="cd-title">This is the whole app.</div>
+              <div className="cd-title">This is the whole manifest.</div>
               <div className="cd-text">
-                No C++. No firmware. No pin configurations. Just read the
-                sensors, make a decision, send an action. The device handles the
-                rest.
+                Your app declares what type of device it needs, what actions and
+                state keys it requires, and how to run its frontend. Origin handles
+                compatibility checking, secret management, process lifecycle, and
+                health monitoring.
               </div>
               <div className="cd-text">
-                This same app runs against an Arduino with an ultrasonic sensor,
-                a Unitree Go2 with LIDAR, or anything else that exposes a
-                distance reading through Origin.
+                The same app runs against a real Unitree Go2 over TCP
+                or a MuJoCo simulation — Origin provides the same API for both.
               </div>
               <div className="cd-highlight">
-                The app doesn&apos;t know or care what device it&apos;s
-                controlling. It just reads and acts.
+                Your app doesn&apos;t know or care if the robot is real or
+                simulated. It just reads state and sends actions.
               </div>
             </div>
           </div>
         </div>
       </section>
 
-      {/* APP STORE */}
-      <section id="appstore" className="appstore">
+      {/* APPS */}
+      <section id="apps" className="appstore">
         <div className="appstore-grid-bg" />
         <div className="appstore-glow" />
 
         <div className="appstore-content reveal">
-          <div className="as-pretitle">Coming Soon</div>
+          <div className="as-pretitle">Install from GitHub</div>
           <h2>
-            The <span>Origin</span> App Store
+            The <span>Origin</span> App Platform
           </h2>
           <p className="as-desc">
-            Share apps with the community. Install an obstacle avoider, a
-            gesture controller, an ML choreography engine — point it at your
-            device and run it. Build once, run on any Origin-compatible device.
+            Share robot apps with the community. Install from any GitHub repo,
+            configure secrets, and launch against your device. Each app gets a
+            full control interface with live telemetry and logs.
           </p>
 
           {waitlistStatus === "success" ? (
@@ -582,29 +594,29 @@ export default function LandingPage() {
               <div className="ap-icon">
                 <div className="inner" style={{ background: "var(--phosphor)", opacity: 0.6 }} />
               </div>
-              <div className="ap-name">obstacle-avoider</div>
-              <div className="ap-author">origin/core</div>
+              <div className="ap-name">agent-controller</div>
+              <div className="ap-author">origin / wheeled</div>
             </div>
             <div className="app-preview">
               <div className="ap-icon">
                 <div className="inner" style={{ background: "#93C5FD", opacity: 0.6 }} />
               </div>
-              <div className="ap-name">gesture-driver</div>
-              <div className="ap-author">origin/core</div>
+              <div className="ap-name">mujoco-policy-ctrl</div>
+              <div className="ap-author">origin / quadruped</div>
             </div>
             <div className="app-preview">
               <div className="ap-icon">
                 <div className="inner" style={{ background: "#86EFAC", opacity: 0.6 }} />
               </div>
               <div className="ap-name">patrol-route</div>
-              <div className="ap-author">community</div>
+              <div className="ap-author">community / wheeled</div>
             </div>
             <div className="app-preview">
               <div className="ap-icon">
                 <div className="inner" style={{ background: "#FCA5A5", opacity: 0.6 }} />
               </div>
-              <div className="ap-name">ml-choreography</div>
-              <div className="ap-author">community</div>
+              <div className="ap-name">gait-trainer</div>
+              <div className="ap-author">community / humanoid</div>
             </div>
             <div className="app-preview">
               <div className="ap-icon">
@@ -624,6 +636,17 @@ export default function LandingPage() {
           <span>origin</span>
         </div>
         <div className="footer-links">
+          <a
+            href="https://github.com/OriginRobotVerse/launcher"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="footer-social"
+            aria-label="GitHub"
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z" />
+            </svg>
+          </a>
           <a
             href="https://x.com/use_origin"
             target="_blank"

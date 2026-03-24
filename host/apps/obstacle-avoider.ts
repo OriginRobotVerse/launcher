@@ -1,4 +1,4 @@
-import type { OriginApp } from "@aorigin/core";
+import type { OriginApp } from "originrobot-core";
 
 const app: OriginApp = {
   name: "obstacle-avoider",

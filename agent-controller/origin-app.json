@@ -1,0 +1,34 @@
+{
+  "$schema": "https://originrobot.dev/schemas/origin-app.json",
+  "name": "Agent Controller",
+  "id": "agent-controller",
+  "version": "0.1.0",
+  "author": "dterminal",
+  "description": "AI-powered agent interface for controlling wheeled robots via natural language",
+  "icon": "icon.png",
+  "setup": "pnpm install",
+  "device": {
+    "type": "wheeled",
+    "requiredActions": ["moveFwd", "moveRight", "moveLeft", "stop"],
+    "requiredState": ["distance", "speed", "angle"]
+  },
+  "runtime": {
+    "type": "nextjs",
+    "entry": ".",
+    "devCmd": "pnpm dev",
+    "startCmd": "pnpm start",
+    "port": 3000,
+    "env": {
+      "NEXT_PUBLIC_ORIGIN_URL": "{{origin.url}}",
+      "NEXT_PUBLIC_DEFAULT_DEVICE": "{{device.id}}"
+    },
+    "healthCheck": "/api/chat"
+  },
+  "secrets": [
+    {
+      "key": "OPENROUTER_API_KEY",
+      "description": "OpenRouter API key for LLM inference",
+      "required": true
+    }
+  ]
+}

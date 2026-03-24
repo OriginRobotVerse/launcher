@@ -1,16 +1,23 @@
-import { defineConfig } from "./src/types.js"
-import { SqliteStorageAdapter } from "./src/storage-sqlite.js"
-// ARDUINO setup
-// export default defineConfig({
-//   port: 5050,
-//   bluetooth: "COM6",
-//   baudRate: 9600,
-//   storage: new SqliteStorageAdapter("./data/origin.db"),
-// })
-
+// Config file — imports adapt to dev (src/) or built (dist/) mode
+let defineConfig: any, SqliteStorageAdapter: any;
+try {
+  // Built mode (node dist/cli.js)
+  const types = await import("./dist/types.js");
+  const storage = await import("./dist/storage-sqlite.js");
+  defineConfig = types.defineConfig;
+  SqliteStorageAdapter = storage.SqliteStorageAdapter;
+} catch {
+  // Dev mode (tsx src/cli.ts)
+  const types = await import("./src/types.js");
+  const storage = await import("./src/storage-sqlite.js");
+  defineConfig = types.defineConfig;
+  SqliteStorageAdapter = storage.SqliteStorageAdapter;
+}
 
 export default defineConfig({
+  port: 5050,
+  dashboardPort: 5052,
   tcp: 5051,
   storage: new SqliteStorageAdapter("./data/origin.db"),
-  port: 5050
+  appsDir: "../apps",
 })

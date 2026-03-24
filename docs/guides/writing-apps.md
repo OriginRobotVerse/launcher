@@ -15,7 +15,7 @@ pnpm run build
 ```
 
 ```ts
-import { OriginClient } from "@aorigin/client";
+import { OriginClient } from "originrobot-client";
 
 const client = new OriginClient({ url: "http://localhost:5050" });
 ```
@@ -235,7 +235,7 @@ Both clients throw typed errors on non-2xx responses.
 
 **TypeScript:**
 ```ts
-import { OriginError } from "@aorigin/client";
+import { OriginError } from "originrobot-client";
 
 try {
     await client.sendAction("toy-car", "nonexistent");

@@ -31,7 +31,7 @@ python main.py --origin http://localhost:3000 --device unitree-go2
 
 **Frontend** (React):
 ```bash
-pnpm --filter @aorigin/mujoco-policy-controller dev
+pnpm --filter originrobot-mujoco-policy-controller dev
 ```
 
 Open http://localhost:5173. The frontend proxies `/api` to the Python backend on port 8000.

@@ -1,16 +1,33 @@
 {
-  "name": "@aorigin/server",
+  "name": "originrobot",
   "version": "0.2.0",
-  "description": "Origin v0.2 server — HTTP API bridge between Arduino devices and client applications",
+  "description": "Origin — CLI tool for managing robots, installing apps, and serving a dashboard",
   "type": "module",
   "main": "dist/index.js",
+  "types": "dist/index.d.ts",
   "bin": {
-    "origin-server": "dist/index.js"
+    "origin": "dist/cli.js"
   },
+  "files": [
+    "dist",
+    "dashboard/app",
+    "dashboard/components",
+    "dashboard/lib",
+    "dashboard/public",
+    "dashboard/package.json",
+    "dashboard/next.config.ts",
+    "dashboard/tsconfig.json",
+    "dashboard/postcss.config.mjs",
+    "simulators",
+    "schemas"
+  ],
   "scripts": {
-    "build": "tsc",
+    "build": "tsc && node -e \"const fs=require('fs'); const p='dist/cli.js'; const c=fs.readFileSync(p,'utf8'); if(!c.startsWith('#!')) fs.writeFileSync(p,'#!/usr/bin/env node\\n'+c);\"",
+    "build:dashboard": "cd dashboard && pnpm install && pnpm build",
     "start": "node dist/index.js",
-    "dev": "tsx src/index.ts"
+    "dev": "tsx src/index.ts",
+    "cli": "tsx src/cli.ts",
+    "prepublishOnly": "pnpm build"
   },
   "dependencies": {
     "better-sqlite3": "^12.8.0",
@@ -21,5 +38,22 @@
     "@types/node": "^20.0.0",
     "tsx": "^4.0.0",
     "typescript": "^5.4.0"
-  }
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/OriginRobotVerse/launcher"
+  },
+  "keywords": [
+    "robotics",
+    "mujoco",
+    "simulation",
+    "hardware",
+    "arduino",
+    "cli",
+    "dashboard"
+  ]
 }

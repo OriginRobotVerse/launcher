@@ -1,0 +1,216 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://originrobot.dev/schemas/origin-app.json",
+  "title": "Origin App Manifest",
+  "description": "Manifest file for Origin robot apps. Place as origin-app.json at the root of your app directory.",
+  "type": "object",
+  "required": ["name", "id", "version", "device", "runtime"],
+  "additionalProperties": false,
+  "properties": {
+    "$schema": {
+      "type": "string",
+      "description": "JSON Schema reference for editor validation."
+    },
+    "name": {
+      "type": "string",
+      "description": "Human-readable app name displayed in the dashboard and CLI."
+    },
+    "id": {
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9-]*$",
+      "description": "Unique app identifier (kebab-case). Used in CLI commands and API routes."
+    },
+    "version": {
+      "type": "string",
+      "pattern": "^\\d+\\.\\d+\\.\\d+",
+      "description": "Semantic version string (e.g. \"0.1.0\")."
+    },
+    "author": {
+      "type": "string",
+      "description": "App author name or handle."
+    },
+    "description": {
+      "type": "string",
+      "description": "Short description of what the app does."
+    },
+    "icon": {
+      "type": "string",
+      "description": "Relative path to an icon image file (e.g. \"icon.png\")."
+    },
+    "setup": {
+      "type": "string",
+      "description": "Top-level setup command run during install. Runs before runtime/backend setup. Use for shared dependencies (e.g. \"pnpm install\")."
+    },
+    "device": {
+      "$ref": "#/$defs/device"
+    },
+    "runtime": {
+      "$ref": "#/$defs/runtime"
+    },
+    "backend": {
+      "$ref": "#/$defs/backend"
+    },
+    "secrets": {
+      "type": "array",
+      "description": "API keys or credentials the app needs. Users configure these via the CLI or dashboard before launching.",
+      "items": {
+        "$ref": "#/$defs/secret"
+      }
+    }
+  },
+  "$defs": {
+    "device": {
+      "type": "object",
+      "description": "Device compatibility requirements. Origin checks these before allowing an app to launch on a device.",
+      "required": ["type"],
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": ["wheeled", "quadruped", "humanoid", "arm", "generic"],
+          "description": "Device type this app targets. Use \"generic\" to support any device."
+        },
+        "requiredActions": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Actions the device must support (e.g. [\"set_pos\", \"reset\"]). Launch fails if any are missing."
+        },
+        "requiredState": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "State keys the device must report (e.g. [\"base_pos_z\"]). Launch fails if any are missing."
+        },
+        "optionalActions": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Actions the app can use if available. Missing ones produce warnings, not errors."
+        },
+        "optionalState": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "State keys the app can use if available."
+        },
+        "minActuators": {
+          "type": ["integer", "null"],
+          "minimum": 0,
+          "description": "Minimum number of actuators required."
+        },
+        "maxActuators": {
+          "type": ["integer", "null"],
+          "minimum": 0,
+          "description": "Maximum number of actuators supported."
+        }
+      }
+    },
+    "runtime": {
+      "type": "object",
+      "description": "Frontend process configuration. Origin spawns this when the app is launched.",
+      "required": ["type", "entry", "port"],
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "type": "string",
+          "description": "Runtime type (e.g. \"nextjs\", \"vite\", \"static\")."
+        },
+        "entry": {
+          "type": "string",
+          "description": "Entry point directory relative to app root (usually \".\")."
+        },
+        "setupCmd": {
+          "type": "string",
+          "description": "Command to install frontend dependencies (e.g. \"pnpm install\"). Run during origin install."
+        },
+        "buildCmd": {
+          "type": "string",
+          "description": "Build command for production mode (e.g. \"pnpm build\"). Run during origin install."
+        },
+        "devCmd": {
+          "type": "string",
+          "description": "Command to start in dev mode (e.g. \"pnpm dev\"). Used when launching with --mode dev."
+        },
+        "startCmd": {
+          "type": "string",
+          "description": "Command to start in production mode (e.g. \"pnpm start\"). Used with --mode prod."
+        },
+        "port": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 65535,
+          "description": "Port the frontend listens on."
+        },
+        "env": {
+          "type": "object",
+          "additionalProperties": { "type": "string" },
+          "description": "Environment variables passed to the frontend process. Supports template variables: {{origin.url}}, {{device.id}}, {{backend.port}}, {{app.port}}."
+        },
+        "healthCheck": {
+          "type": "string",
+          "description": "HTTP path to poll after startup (e.g. \"/api/health\"). Origin waits for a 200 response before marking the app as running. If omitted, Origin waits for the port to accept connections."
+        }
+      }
+    },
+    "backend": {
+      "type": "object",
+      "description": "Optional backend process (e.g. Python FastAPI server). Spawned before the frontend.",
+      "required": ["type", "entry", "port"],
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "type": "string",
+          "description": "Backend runtime type (e.g. \"python\", \"node\")."
+        },
+        "entry": {
+          "type": "string",
+          "description": "Entry point file relative to app root (e.g. \"backend/main.py\")."
+        },
+        "setupCmd": {
+          "type": "string",
+          "description": "Command to set up the backend environment (e.g. \"python -m venv .venv && .venv/bin/pip install -r requirements.txt\")."
+        },
+        "installCmd": {
+          "type": "string",
+          "description": "Command to install backend dependencies (e.g. \"pip install -r backend/requirements.txt\"). Run during origin install."
+        },
+        "args": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Arguments passed to the backend entry point. Supports template variables."
+        },
+        "port": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 65535,
+          "description": "Port the backend listens on."
+        },
+        "env": {
+          "type": "object",
+          "additionalProperties": { "type": "string" },
+          "description": "Environment variables for the backend process. Supports template variables."
+        },
+        "healthCheck": {
+          "type": "string",
+          "description": "HTTP path to poll after startup (e.g. \"/api/status\")."
+        }
+      }
+    },
+    "secret": {
+      "type": "object",
+      "required": ["key", "description", "required"],
+      "additionalProperties": false,
+      "properties": {
+        "key": {
+          "type": "string",
+          "description": "Environment variable name (e.g. \"OPENROUTER_API_KEY\")."
+        },
+        "description": {
+          "type": "string",
+          "description": "Human-readable description shown in the dashboard and CLI."
+        },
+        "required": {
+          "type": "boolean",
+          "description": "If true, the app cannot launch without this secret configured."
+        }
+      }
+    }
+  }
+}

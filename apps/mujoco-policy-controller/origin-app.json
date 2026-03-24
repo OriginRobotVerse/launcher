@@ -1,0 +1,46 @@
+{
+  "$schema": "https://originrobot.dev/schemas/origin-app.json",
+  "name": "MuJoCo Policy Controller",
+  "id": "mujoco-policy-controller",
+  "version": "0.2.0",
+  "author": "dterminal",
+  "description": "AI-powered control policies for quadruped, humanoid, and dexterous robots in MuJoCo simulation",
+  "icon": "icon.png",
+  "setup": "pnpm install",
+  "device": {
+    "type": "generic",
+    "requiredActions": ["set_pos", "reset"],
+    "requiredState": ["base_pos_z"],
+    "optionalActions": ["pause", "set_ctrl"],
+    "optionalState": ["base_angvel_x", "base_angvel_y", "base_angvel_z"]
+  },
+  "runtime": {
+    "type": "nextjs",
+    "entry": ".",
+    "devCmd": "pnpm dev",
+    "startCmd": "pnpm start",
+    "port": 3001,
+    "env": {
+      "NEXT_PUBLIC_ORIGIN_URL": "{{origin.url}}",
+      "NEXT_PUBLIC_BACKEND_URL": "http://localhost:{{backend.port}}"
+    }
+  },
+  "backend": {
+    "type": "python",
+    "entry": "backend/main.py",
+    "installCmd": "pip install -r backend/requirements.txt",
+    "args": ["--origin", "{{origin.url}}", "--device", "{{device.id}}", "--port", "{{backend.port}}"],
+    "port": 8000,
+    "env": {
+      "NEXT_PUBLIC_BACKEND_URL": "http://localhost:{{backend.port}}"
+    },
+    "healthCheck": "/api/status"
+  },
+  "secrets": [
+    {
+      "key": "OPENROUTER_API_KEY",
+      "description": "OpenRouter API key for LLM inference",
+      "required": true
+    }
+  ]
+}
