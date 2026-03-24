@@ -1,5 +1,5 @@
 import { SerialPort, ReadlineParser } from "serialport";
-import type { Transport } from "@aorigin/core";
+import type { Transport } from "originrobot-core";
 
 export interface SerialTransportOptions {
   path: string;

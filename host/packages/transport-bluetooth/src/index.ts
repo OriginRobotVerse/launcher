@@ -1,5 +1,5 @@
 import { SerialPort, ReadlineParser } from "serialport";
-import type { Transport } from "@aorigin/core";
+import type { Transport } from "originrobot-core";
 
 export interface BluetoothTransportOptions {
   /** Serial port path for the Bluetooth module (e.g., /dev/tty.HC-05) */

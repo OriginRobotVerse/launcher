@@ -1,5 +1,5 @@
-import { OriginClient } from "@aorigin/core";
-import type { OriginApp, AppContext, Transport } from "@aorigin/core";
+import { OriginClient } from "originrobot-core";
+import type { OriginApp, AppContext, Transport } from "originrobot-core";
 
 export interface LauncherOptions {
   /** Tick interval in ms — how often the app loop runs (default: 50ms / ~20Hz) */

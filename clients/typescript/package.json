@@ -1,5 +1,5 @@
 {
-  "name": "@aorigin/client",
+  "name": "originrobot-client",
   "version": "0.2.0",
   "description": "TypeScript client for the Origin server API",
   "type": "module",

@@ -77,7 +77,7 @@ node dist/index.js --bluetooth /dev/ttyUSB0
 
 **TypeScript:**
 ```ts
-import { OriginClient } from "@aorigin/client";
+import { OriginClient } from "originrobot-client";
 
 const client = new OriginClient({ url: "http://localhost:5050" });
 const state = await client.getDeviceState("weather-station");

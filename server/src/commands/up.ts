@@ -1,0 +1,253 @@
+import { readFileSync, existsSync } from "node:fs";
+import { resolve, dirname } from "node:path";
+import { pathToFileURL, fileURLToPath } from "node:url";
+import { spawn, exec, type ChildProcess } from "node:child_process";
+import { DeviceManager } from "../device-manager.js";
+import { AppManager } from "../app-manager.js";
+import { SimulatorManager } from "../simulator-manager.js";
+import { SSEManager } from "../sse.js";
+import { WebhookManager } from "../webhooks.js";
+import { createOriginServer } from "../server.js";
+import { createAuthMiddleware } from "../auth.js";
+import { MemoryStorageAdapter } from "../storage.js";
+import type { SSEEvent, OriginConfig } from "../types.js";
+
+interface UpFlags {
+  serial: string[];
+  bluetooth: string[];
+  tcp: number[];
+  port: number;
+  dashboardPort: number;
+  baudRate: number;
+  token: string | null;
+  noDashboard: boolean;
+  open: boolean;
+}
+
+function toArray(val: string | string[] | undefined): string[] {
+  if (!val) return [];
+  return Array.isArray(val) ? val : [val];
+}
+
+async function loadConfigFile(): Promise<OriginConfig | null> {
+  for (const name of ["config.ts", "config.js"]) {
+    const filePath = resolve(process.cwd(), name);
+    if (!existsSync(filePath)) continue;
+    try {
+      const fileUrl = pathToFileURL(filePath).href;
+      const mod = await import(fileUrl);
+      const config: OriginConfig = mod.default ?? mod;
+      return config;
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      console.error(`[config] Failed to load ${name}: ${message}`);
+    }
+  }
+  return null;
+}
+
+export function parseUpFlags(args: string[]): UpFlags {
+  const flags: UpFlags = {
+    serial: [],
+    bluetooth: [],
+    tcp: [],
+    port: 0,
+    dashboardPort: 0,
+    baudRate: 0,
+    token: null,
+    noDashboard: false,
+    open: false,
+  };
+
+  for (let i = 0; i < args.length; i++) {
+    const arg = args[i];
+    const next = args[i + 1];
+
+    switch (arg) {
+      case "--serial":
+      case "-s":
+        if (next) { flags.serial.push(next); i++; }
+        break;
+      case "--bluetooth":
+      case "-b":
+        if (next) { flags.bluetooth.push(next); i++; }
+        break;
+      case "--port":
+      case "-p":
+        if (next) { flags.port = parseInt(next, 10); i++; }
+        break;
+      case "--dashboard-port":
+        if (next) { flags.dashboardPort = parseInt(next, 10); i++; }
+        break;
+      case "--baud":
+        if (next) { flags.baudRate = parseInt(next, 10); i++; }
+        break;
+      case "--tcp":
+        if (next) { flags.tcp.push(parseInt(next, 10)); i++; }
+        break;
+      case "--token":
+      case "-t":
+        if (next) { flags.token = next; i++; }
+        break;
+      case "--no-dashboard":
+        flags.noDashboard = true;
+        break;
+      case "--open":
+        flags.open = true;
+        break;
+    }
+  }
+
+  return flags;
+}
+
+export async function runUp(args: string[]): Promise<void> {
+  const flags = parseUpFlags(args);
+  const fileConfig = await loadConfigFile();
+
+  const fileTcp = fileConfig?.tcp
+    ? (Array.isArray(fileConfig.tcp) ? fileConfig.tcp : [fileConfig.tcp])
+    : [];
+
+  const port = flags.port || fileConfig?.port || 5050;
+  const dashboardPort = flags.dashboardPort || fileConfig?.dashboardPort || 5051;
+  const baudRate = flags.baudRate || fileConfig?.baudRate || 9600;
+  const token = flags.token ?? fileConfig?.token ?? null;
+  const serial = flags.serial.length > 0 ? flags.serial : toArray(fileConfig?.serial);
+  const bluetooth = flags.bluetooth.length > 0 ? flags.bluetooth : toArray(fileConfig?.bluetooth);
+  const tcp = flags.tcp.length > 0 ? flags.tcp : fileTcp;
+  const appsDir = fileConfig?.appsDir ?? "./apps";
+
+  // Resolve the package root (server/) for bundled assets
+  const __dir = typeof import.meta.dirname === "string"
+    ? import.meta.dirname
+    : dirname(fileURLToPath(import.meta.url));
+  const packageRoot = resolve(__dir, "..");
+
+  // Create managers
+  const storage = fileConfig?.storage ?? new MemoryStorageAdapter();
+  const deviceManager = new DeviceManager(storage);
+  const appManager = new AppManager(storage, appsDir);
+  const tcpPort = tcp.length > 0 ? tcp[0] : 5051;
+  const simulatorManager = new SimulatorManager(tcpPort);
+  const sseManager = new SSEManager();
+  const webhookManager = new WebhookManager(storage);
+  const authCheck = createAuthMiddleware(token);
+
+  // Wire up SSE and webhooks
+  deviceManager.on("sse", (event: SSEEvent) => {
+    sseManager.broadcast(event);
+    webhookManager.dispatch(event).catch((err) => {
+      console.error("[webhook] Dispatch error:", err);
+    });
+  });
+
+  // Scan installed apps
+  await appManager.scan();
+
+  // Create HTTP server
+  const server = createOriginServer({
+    port,
+    deviceManager,
+    appManager,
+    simulatorManager,
+    sseManager,
+    webhookManager,
+    authCheck,
+    storage,
+  });
+
+  // Open hardware transports
+  const portPromises: Promise<void>[] = [];
+  for (const path of serial) {
+    portPromises.push(deviceManager.addPort({ type: "serial", path, baudRate }));
+  }
+  for (const path of bluetooth) {
+    portPromises.push(deviceManager.addPort({ type: "bluetooth", path, baudRate }));
+  }
+  await Promise.allSettled(portPromises);
+
+  for (const tcpPort of tcp) {
+    deviceManager.addTcpListener(tcpPort);
+  }
+
+  // Start HTTP server
+  server.listen(port, () => {
+    console.log("");
+    console.log("  origin v0.2.0");
+    console.log("");
+    console.log(`  core server  → http://localhost:${port}`);
+  });
+
+  // Start dashboard
+  let dashboardProcess: ChildProcess | null = null;
+  if (!flags.noDashboard) {
+    const dashboardDir = resolve(packageRoot, "dashboard");
+    if (existsSync(dashboardDir)) {
+      dashboardProcess = spawn("npx", ["next", "dev", "-p", String(dashboardPort)], {
+        cwd: dashboardDir,
+        env: {
+          ...process.env,
+          NEXT_PUBLIC_ORIGIN_URL: `http://localhost:${port}`,
+          PORT: String(dashboardPort),
+        },
+        stdio: "pipe",
+      });
+
+      dashboardProcess.stdout?.on("data", (d) => {
+        const text = String(d).trim();
+        if (text) process.stdout.write(`  [dashboard] ${text}\n`);
+      });
+      dashboardProcess.stderr?.on("data", (d) => {
+        const text = String(d).trim();
+        if (text) process.stderr.write(`  [dashboard] ${text}\n`);
+      });
+
+      console.log(`  dashboard    → http://localhost:${dashboardPort}`);
+    } else {
+      console.log(`  dashboard    → not found (${dashboardDir})`);
+    }
+  }
+
+  console.log("");
+  if (token) {
+    console.log("  auth         → enabled (Bearer token required)");
+  }
+  const ports = deviceManager.getPortStatuses();
+  if (ports.length > 0) {
+    console.log(`  ports        → ${ports.map((p) => `${p.path} (${p.status})`).join(", ")}`);
+  }
+  const installed = appManager.listInstalled();
+  if (installed.length > 0) {
+    console.log(`  apps         → ${installed.length} installed`);
+  }
+  console.log("");
+
+  if (flags.open) {
+    const openCmd = process.platform === "darwin" ? "open" : process.platform === "win32" ? "start" : "xdg-open";
+    setTimeout(() => {
+      exec(`${openCmd} http://localhost:${dashboardPort}`);
+    }, 3000);
+  }
+
+  // Graceful shutdown
+  let shuttingDown = false;
+  async function shutdown() {
+    if (shuttingDown) return;
+    shuttingDown = true;
+    console.log("\n[shutdown] Closing connections...");
+    sseManager.closeAll();
+    await simulatorManager.shutdown();
+    await appManager.shutdown();
+    await deviceManager.shutdown();
+    if (dashboardProcess && !dashboardProcess.killed) {
+      dashboardProcess.kill("SIGTERM");
+    }
+    await new Promise<void>((resolve) => server.close(() => resolve()));
+    console.log("[shutdown] Done.");
+    process.exit(0);
+  }
+
+  process.on("SIGINT", shutdown);
+  process.on("SIGTERM", shutdown);
+}

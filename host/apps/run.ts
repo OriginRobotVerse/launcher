@@ -5,9 +5,9 @@
  *   npx tsx apps/run.ts --port /dev/ttyUSB0 --app obstacle-avoider
  */
 
-import { Launcher } from "@aorigin/launcher";
-import { SerialTransport } from "@aorigin/transport-serial";
-import type { OriginApp } from "@aorigin/core";
+import { Launcher } from "originrobot-launcher";
+import { SerialTransport } from "originrobot-transport-serial";
+import type { OriginApp } from "originrobot-core";
 
 const args = process.argv.slice(2);
 

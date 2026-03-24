@@ -146,16 +146,16 @@ const hostLayers = [
     sub: "obstacle-avoider.ts",
   },
   {
-    name: "@aorigin/launcher",
+    name: "originrobot-launcher",
     sub: null,
   },
   {
-    name: "@aorigin/core",
+    name: "originrobot-core",
     sub: "OriginClient",
   },
   {
     name: "Transport",
-    sub: "@aorigin/transport-serial",
+    sub: "originrobot-transport-serial",
   },
 ];
 

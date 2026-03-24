@@ -1,5 +1,5 @@
 {
-  "name": "@aorigin/launcher",
+  "name": "originrobot-launcher",
   "version": "0.1.0",
   "type": "module",
   "main": "dist/index.js",
@@ -8,7 +8,7 @@
     "build": "tsc"
   },
   "dependencies": {
-    "@aorigin/core": "*"
+    "originrobot-core": "*"
   },
   "devDependencies": {
     "typescript": "^5.4.0"

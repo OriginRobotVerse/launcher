@@ -30,8 +30,8 @@ from pydantic import BaseModel
 sys.path.insert(0, str(__import__("pathlib").Path(__file__).resolve().parent.parent.parent.parent / "clients" / "python"))
 from origin_client.client import OriginClient, OriginError
 
-from policies import POLICY_MAP, ALL_POLICIES, Policy
-from neural_policy import NeuralPolicy
+from policies import POLICY_MAP, ALL_POLICIES, Policy, get_policies_for_device, MODEL_POLICIES
+from neural_policy import NeuralPolicy, NEURAL_CONFIGS
 
 # --- App state ---
 
@@ -272,12 +272,22 @@ def main():
     parser.add_argument("--policy-model", default=None, help="Path to TorchScript (.pt) or ONNX (.onnx) RL policy")
     args = parser.parse_args()
 
+    # Load model-specific policies based on device ID
+    device_policies = get_policies_for_device(args.device)
+    ALL_POLICIES.clear()
+    ALL_POLICIES.extend(device_policies)
+    POLICY_MAP.clear()
+    POLICY_MAP.update({p.name: p for p in ALL_POLICIES})
+
     # Register neural policy if a model file is provided
     if args.policy_model:
+        # Use model-specific config if available
+        neural_config = NEURAL_CONFIGS.get(args.device)
         neural = NeuralPolicy(
             name="neural",
             description=f"RL policy: {os.path.basename(args.policy_model)}",
             model_path=args.policy_model,
+            **({"config": neural_config} if neural_config else {}),
         )
         ALL_POLICIES.insert(0, neural)
         POLICY_MAP["neural"] = neural
@@ -288,6 +298,7 @@ def main():
 
     print(f"[controller] Origin server: {args.origin}")
     print(f"[controller] Device: {args.device}")
+    print(f"[controller] Policies: {[p.name for p in ALL_POLICIES]}")
     print(f"[controller] Policy loop: {args.hz} Hz")
     if args.policy_model:
         print(f"[controller] RL policy: {args.policy_model}")

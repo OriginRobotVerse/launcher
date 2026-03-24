@@ -312,9 +312,9 @@ export default function HostRuntime() {
         viewport={{ once: true, margin: "-60px" }}
         transition={{ duration: 0.5, delay: 0.2 }}
       >
-        <div style={packageBoxStyle}>@aorigin/core</div>
+        <div style={packageBoxStyle}>originrobot-core</div>
         <SmallArrow />
-        <div style={packageBoxStyle}>@aorigin/launcher</div>
+        <div style={packageBoxStyle}>originrobot-launcher</div>
         <SmallArrow />
         <div style={packageBoxHighlightStyle}>Your App</div>
       </motion.div>
