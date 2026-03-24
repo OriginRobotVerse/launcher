@@ -122,7 +122,8 @@ export async function runUp(args: string[]): Promise<void> {
   const __dir = typeof import.meta.dirname === "string"
     ? import.meta.dirname
     : dirname(fileURLToPath(import.meta.url));
-  const packageRoot = resolve(__dir, "..");
+  // __dir is src/commands/ (dev) or dist/commands/ (built) — go up 2 levels to server/
+  const packageRoot = resolve(__dir, "..", "..");
 
   // Create managers
   const storage = fileConfig?.storage ?? new MemoryStorageAdapter();
