@@ -9,19 +9,16 @@ Origin is a platform for managing robots, simulators, and robotics applications.
 Install globally with npm:
 
 ```bash
-npm install -g originrobot-server
+npm install -g originrobot
 ```
 
-Or add it to a project with pnpm:
+Or run directly with npx:
 
 ```bash
-pnpm add originrobot-server
+npx originrobot up
 ```
 
-This installs two executables:
-
-- **`origin`** -- the CLI tool documented here
-- **`origin-server`** -- starts the server directly (equivalent to `node dist/index.js`)
+This installs the **`origin`** CLI.
 
 ---
 
@@ -38,7 +35,7 @@ origin install https://github.com/user/my-robot-app
 origin launch my-robot-app -d toy-car
 ```
 
-Once the server is running, open **http://localhost:5051** in your browser to access the dashboard.
+Once the server is running, open **http://localhost:5050** in your browser to access the dashboard.
 
 ---
 
@@ -46,7 +43,7 @@ Once the server is running, open **http://localhost:5051** in your browser to ac
 
 ### origin up
 
-Start the Origin core server and the Next.js dashboard.
+Start the Origin server and dashboard.
 
 ```
 origin up [options]
@@ -56,8 +53,7 @@ origin up [options]
 
 | Flag | Short | Default | Description |
 |------|-------|---------|-------------|
-| `--port <number>` | `-p` | `5050` | Core server port |
-| `--dashboard-port <number>` | | `5051` | Dashboard port |
+| `--port <number>` | `-p` | `5050` | Server port (serves API and dashboard) |
 | `--serial <path>` | `-s` | | Serial port path (repeatable) |
 | `--bluetooth <path>` | `-b` | | Bluetooth port path (repeatable) |
 | `--tcp <port>` | | | TCP listener port for simulators (repeatable) |
@@ -69,13 +65,13 @@ origin up [options]
 **Startup output:**
 
 ```
-  origin v0.2.0
+  origin v0.6.4
 
-  core server  -> http://localhost:5050
-  dashboard    -> http://localhost:5051
+  server       → http://localhost:5050
+  dashboard    → http://localhost:5050
 
-  ports        -> /dev/ttyUSB0 (connected)
-  apps         -> 3 installed
+  ports        → /dev/ttyUSB0 (connected)
+  apps         → 3 installed
 ```
 
 The server loads configuration from `config.ts` or `config.js` in the current working directory if either file exists. Command-line flags take precedence over file configuration.
@@ -89,8 +85,8 @@ origin up --serial /dev/ttyUSB0
 # Start with a TCP listener for simulators, no dashboard
 origin up --tcp 5051 --no-dashboard
 
-# Start on custom ports with authentication
-origin up --port 8080 --dashboard-port 8081 --token my-secret-token
+# Start on a custom port with authentication
+origin up --port 8080 --token my-secret-token
 
 # Multiple serial ports with a custom baud rate
 origin up -s /dev/ttyUSB0 -s /dev/ttyACM0 --baud 115200
@@ -379,10 +375,10 @@ origin status [--json]
 **Example output:**
 
 ```
-  origin v0.2.0
+  origin v0.6.4
 
-  core server  -> http://localhost:5050
-  dashboard    -> http://localhost:5051
+  server       → http://localhost:5050
+  dashboard    → http://localhost:5050
 
   devices
     ● unitree-go2       quadruped   37 state keys    4 actions
@@ -499,12 +495,11 @@ origin -h
 Create a `config.ts` (or `config.js`) in the directory where you run `origin up`. The server loads this file automatically at startup.
 
 ```typescript
-import { defineConfig } from "originrobot-server"
-import { SqliteStorageAdapter } from "originrobot-server/storage-sqlite"
+import { defineConfig } from "originrobot"
+import { SqliteStorageAdapter } from "originrobot/storage-sqlite"
 
 export default defineConfig({
   port: 5050,
-  dashboardPort: 5052,
   tcp: 5051,
   baudRate: 9600,
   storage: new SqliteStorageAdapter("./data/origin.db"),
@@ -516,8 +511,7 @@ export default defineConfig({
 
 | Key | Type | Default | Description |
 |-----|------|---------|-------------|
-| `port` | `number` | `5050` | Core server port |
-| `dashboardPort` | `number` | `5051` | Dashboard port |
+| `port` | `number` | `5050` | Server port (serves API and dashboard) |
 | `serial` | `string \| string[]` | | Serial port path(s) |
 | `bluetooth` | `string \| string[]` | | Bluetooth port path(s) |
 | `tcp` | `number \| number[]` | | TCP listener port(s) for simulators |
@@ -541,7 +535,7 @@ Command-line flags always take precedence over values in the config file.
 
 ## Dashboard
 
-When you run `origin up`, the dashboard starts automatically at **http://localhost:5051** (unless `--no-dashboard` is passed).
+When you run `origin up`, the dashboard starts automatically at **http://localhost:5050** (unless `--no-dashboard` is passed).
 
 ### Pages
 
@@ -804,10 +798,10 @@ ORIGIN_URL=http://localhost:8080 origin status
 
 If port 5050 or 5051 is already in use, you will see an `EADDRINUSE` error.
 
-**Fix:** Use the `--port` and `--dashboard-port` flags, or set them in your `config.ts`:
+**Fix:** Use the `--port` flag or set it in your `config.ts`:
 
 ```bash
-origin up --port 6060 --dashboard-port 6061
+origin up --port 6060
 ```
 
 ### Missing secrets
