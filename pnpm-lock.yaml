@@ -51,49 +51,6 @@ importers:
         specifier: ^5
         version: 5.9.3
 
-  apps/agent-controller:
-    dependencies:
-      glove-core:
-        specifier: latest
-        version: 2.0.5
-      glove-next:
-        specifier: latest
-        version: 2.0.5(@anthropic-ai/sdk@0.74.0(zod@4.3.6))(openai@6.32.0(zod@4.3.6))
-      glove-react:
-        specifier: latest
-        version: 2.0.5(react@19.2.3)
-      next:
-        specifier: 16.1.6
-        version: 16.1.6(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
-      react:
-        specifier: 19.2.3
-        version: 19.2.3
-      react-dom:
-        specifier: 19.2.3
-        version: 19.2.3(react@19.2.3)
-      zod:
-        specifier: ^4.3.6
-        version: 4.3.6
-    devDependencies:
-      '@tailwindcss/postcss':
-        specifier: ^4
-        version: 4.2.2
-      '@types/node':
-        specifier: ^20
-        version: 20.19.37
-      '@types/react':
-        specifier: ^19
-        version: 19.2.14
-      '@types/react-dom':
-        specifier: ^19
-        version: 19.2.3(@types/react@19.2.14)
-      tailwindcss:
-        specifier: ^4
-        version: 4.2.2
-      typescript:
-        specifier: ^5
-        version: 5.9.3
-
   apps/mujoco-policy-controller:
     dependencies:
       glove-core:
