@@ -28,6 +28,20 @@ export default function AppsPage() {
         </Link>
       </div>
 
+      <div className="border border-wire bg-panel p-3 mb-4">
+        <p className="text-[11px] text-dim">
+          Install apps or request new ones from the{" "}
+          <a
+            href="https://origin-appstore.vercel.app/"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-phosphor hover:underline"
+          >
+            Origin Marketplace
+          </a>
+        </p>
+      </div>
+
       {apps.length === 0 ? (
         <div className="border border-wire bg-panel p-8 text-center">
           <p className="text-dim text-xs">No apps installed</p>

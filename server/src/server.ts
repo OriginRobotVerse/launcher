@@ -346,7 +346,7 @@ export function createOriginServer(opts: ServerOptions) {
       // App-specific routes: /api/apps/:id/*
       const appRoute = path.match(/^\/api\/apps\/([^/]+)(\/.*)?$/);
       if (appRoute && appRoute[1] !== "install" && appRoute[1] !== "scan") {
-        const appId = appRoute[1];
+        const appId = decodeURIComponent(appRoute[1]);
         const appRest = appRoute[2] ?? "";
 
         const installed = appManager.getInstalled(appId);
