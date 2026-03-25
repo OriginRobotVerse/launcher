@@ -139,7 +139,7 @@ export default function DocsPage() {
                 <div className="docs-code-dot" />
                 <span>terminal</span>
               </div>
-              <pre>{`npm install -g originrobot-server`}</pre>
+              <pre>{`npm install -g originrobot`}</pre>
             </div>
             <p>Or run directly with npx:</p>
             <div className="docs-code">
@@ -150,8 +150,8 @@ export default function DocsPage() {
               <pre>{`npx originrobot up`}</pre>
             </div>
             <p>
-              This installs two executables: <code>origin</code> (the CLI) and{" "}
-              <code>origin-server</code> (starts the server directly).
+              This installs the <code>origin</code> CLI globally. You can then run{" "}
+              <code>origin up</code> to start the server.
             </p>
 
             <h2 id="cli-quickstart">Quick Start</h2>
@@ -170,7 +170,7 @@ origin install https://github.com/user/my-robot-app
 origin launch my-robot-app -d toy-car`}</pre>
             </div>
             <p>
-              Once the server is running, open <code>http://localhost:5051</code> to access
+              Once the server is running, open <code>http://localhost:5050</code> to access
               the dashboard.
             </p>
           </section>
@@ -182,7 +182,7 @@ origin launch my-robot-app -d toy-car`}</pre>
 
             <div className="docs-command" id="cmd-up">
               <h2>origin up</h2>
-              <p>Start the Origin core server and the Next.js dashboard.</p>
+              <p>Start the Origin server and dashboard.</p>
               <div className="docs-code">
                 <div className="docs-code-header">
                   <div className="docs-code-dot" />
@@ -196,8 +196,7 @@ origin launch my-robot-app -d toy-car`}</pre>
                   <tr><th>Flag</th><th>Default</th><th>Description</th></tr>
                 </thead>
                 <tbody>
-                  <tr><td><code>--port &lt;number&gt;</code></td><td>5050</td><td>Core server port</td></tr>
-                  <tr><td><code>--dashboard-port &lt;number&gt;</code></td><td>5051</td><td>Dashboard port</td></tr>
+                  <tr><td><code>--port &lt;number&gt;</code></td><td>5050</td><td>Server port (serves API and dashboard)</td></tr>
                   <tr><td><code>--serial &lt;path&gt;</code></td><td>—</td><td>Serial port path (repeatable)</td></tr>
                   <tr><td><code>--bluetooth &lt;path&gt;</code></td><td>—</td><td>Bluetooth port path (repeatable)</td></tr>
                   <tr><td><code>--tcp &lt;port&gt;</code></td><td>—</td><td>TCP listener port for simulators</td></tr>
@@ -219,8 +218,8 @@ origin up --serial /dev/ttyUSB0
 # Start with TCP for simulators, no dashboard
 origin up --tcp 5051 --no-dashboard
 
-# Custom ports with authentication
-origin up --port 8080 --dashboard-port 8081 --token my-secret`}</pre>
+# Custom port with authentication
+origin up --port 8080 --token my-secret`}</pre>
               </div>
             </div>
 

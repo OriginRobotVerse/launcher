@@ -61,7 +61,7 @@ pnpm run dev -- --tcp 5051 --bluetooth /dev/tty.HC-05
 Or use a config file:
 
 ```ts
-import { defineConfig } from "origin-server";
+import { defineConfig } from "originrobot";
 
 export default defineConfig({
   tcp: [5051],
