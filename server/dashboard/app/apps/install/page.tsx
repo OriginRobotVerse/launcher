@@ -67,6 +67,21 @@ export default function InstallPage() {
           >
             INSTALL
           </button>
+
+          <div className="border border-wire bg-panel p-4 mt-2">
+            <p className="text-[11px] text-dim">
+              Browse and install apps from the{" "}
+              <a
+                href="https://origin-appstore.vercel.app/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-phosphor hover:underline"
+              >
+                Origin Marketplace
+              </a>
+              , or request new apps from the community.
+            </p>
+          </div>
         </div>
       )}
 

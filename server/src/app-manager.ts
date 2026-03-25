@@ -14,6 +14,16 @@ import type {
 
 const MAX_LOG_LINES = 500;
 
+/** Normalise an app ID: lowercase, trim, replace spaces/underscores with hyphens, collapse repeats, strip non-alphanumeric edges. */
+export function normalizeAppId(raw: string): string {
+  return raw
+    .trim()
+    .toLowerCase()
+    .replace(/[\s_]+/g, "-")   // spaces & underscores → hyphens
+    .replace(/-{2,}/g, "-")    // collapse consecutive hyphens
+    .replace(/^-|-$/g, "");    // strip leading/trailing hyphens
+}
+
 export class AppManager extends EventEmitter {
   private storage: StorageAdapter;
   private appsDir: string;
@@ -37,6 +47,7 @@ export class AppManager extends EventEmitter {
     // Load from storage
     const storedApps = await this.storage.listApps();
     for (const stored of storedApps) {
+      stored.manifest.id = normalizeAppId(stored.manifest.id);
       const secrets = await this.storage.getAppSecrets(stored.manifest.id);
       this.installed.set(stored.manifest.id, {
         manifest: stored.manifest,
@@ -65,6 +76,7 @@ export class AppManager extends EventEmitter {
 
       try {
         const manifest = JSON.parse(readFileSync(manifestPath, "utf-8")) as AppManifest;
+        manifest.id = normalizeAppId(manifest.id);
         if (this.installed.has(manifest.id)) continue;
 
         const secrets = await this.storage.getAppSecrets(manifest.id);
@@ -130,10 +142,11 @@ export class AppManager extends EventEmitter {
       throw new Error("Invalid origin-app.json: missing id, name, or runtime");
     }
 
-    // Override ID if name provided
+    // Override ID if name provided, then normalise
     if (opts?.name) {
       manifest.id = opts.name;
     }
+    manifest.id = normalizeAppId(manifest.id);
 
     // Run setup/install/build commands (non-fatal — warn on failure)
     const runCmd = (label: string, cmd: string) => {

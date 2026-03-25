@@ -151,6 +151,9 @@ export default function LandingPage() {
           <a href="#apps" onClick={() => setNavOpen(false)}>
             Apps
           </a>
+          <a href="/docs" onClick={() => setNavOpen(false)}>
+            Docs
+          </a>
           <a
             href="https://github.com/OriginRobotVerse/launcher"
             target="_blank"
