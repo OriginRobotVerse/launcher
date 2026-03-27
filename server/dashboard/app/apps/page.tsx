@@ -32,7 +32,7 @@ export default function AppsPage() {
         <p className="text-[11px] text-dim">
           Install apps or request new ones from the{" "}
           <a
-            href="https://origin-appstore.vercel.app/"
+            href="https://store.origin-industries.systems/"
             target="_blank"
             rel="noopener noreferrer"
             className="text-phosphor hover:underline"

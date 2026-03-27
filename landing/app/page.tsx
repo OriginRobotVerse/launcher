@@ -155,6 +155,14 @@ export default function LandingPage() {
             Docs
           </a>
           <a
+            href="https://store.origin-industries.systems"
+            target="_blank"
+            rel="noopener noreferrer"
+            onClick={() => setNavOpen(false)}
+          >
+            Store
+          </a>
+          <a
             href="https://github.com/OriginRobotVerse/launcher"
             target="_blank"
             rel="noopener noreferrer"
@@ -216,13 +224,26 @@ export default function LandingPage() {
             <span>Control anything.</span>
           </h1>
           <p className="hero-sub">
-            Origin is the open-source platform for controlling robots and hardware devices.
-            One CLI to manage devices, install apps, and launch control interfaces — from
-            Arduinos to simulated quadrupeds to humanoids.
+            Origin is an open-source platform that lets you control robots and
+            hardware devices. Run one command, get a dashboard, connect your
+            devices, and start building — from Arduinos to quadruped robots to humanoids.
           </p>
           <div className="hero-actions">
             <a className="btn-primary" href="#how">
               <span>Get Started</span>
+            </a>
+            <a
+              className="btn-secondary"
+              href="https://store.origin-industries.systems"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              <span>Store</span>
+              <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                <line x1="3" y1="7" x2="11" y2="7" stroke="currentColor" strokeWidth="1.5" />
+                <line x1="8" y1="4" x2="11" y2="7" stroke="currentColor" strokeWidth="1.5" />
+                <line x1="8" y1="10" x2="11" y2="7" stroke="currentColor" strokeWidth="1.5" />
+              </svg>
             </a>
             <a
               className="btn-secondary"
@@ -263,6 +284,28 @@ export default function LandingPage() {
         </div>
       </div>
 
+      {/* VIDEO */}
+      <section id="watch" className="video-section">
+        <div className="container">
+          <div className="reveal">
+            <div className="section-label">00 — Watch</div>
+            <h2 className="section-title">See Origin in action.</h2>
+            <p className="section-desc">
+              Watch how it works — from running your first command to
+              controlling a real robot, all in a few minutes.
+            </p>
+          </div>
+          <div className="video-embed reveal reveal-delay-1">
+            <iframe
+              src="https://www.youtube.com/embed/qiOvWnOFnSk?si=Gbp_FXolaU209oui"
+              title="Origin — Write code. Control anything."
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+              allowFullScreen
+            />
+          </div>
+        </div>
+      </section>
+
       {/* WHAT IS ORIGIN */}
       <section id="what">
         <div className="container">
@@ -272,10 +315,10 @@ export default function LandingPage() {
               One platform for all your robots
             </h2>
             <p className="section-desc">
-              Origin is a CLI + dashboard for managing hardware devices and the
-              apps that control them. Connect over Bluetooth, Serial, or TCP.
-              Install apps from GitHub. Launch control interfaces with one command.
-              Everything goes through a unified REST API.
+              Origin gives you a command-line tool and a visual dashboard to
+              manage your hardware and the apps that control it. Connect your
+              devices, install apps from the community, and launch control
+              interfaces — all in one place.
             </p>
           </div>
 
@@ -284,36 +327,36 @@ export default function LandingPage() {
               <div className="wc-number">01</div>
               <div className="wc-title">CLI + Dashboard</div>
               <div className="wc-text">
-                One command — <code>origin up</code> — starts the core server and a
-                full Next.js dashboard. Manage devices, install apps, configure
-                secrets, and launch controllers from the terminal or the browser.
+                Run <code>origin up</code> and you get a full visual dashboard
+                in your browser. Manage devices, install apps, and launch
+                controllers — from the terminal or the UI, your choice.
               </div>
             </div>
             <div className="what-card reveal reveal-delay-2">
               <div className="wc-number">02</div>
               <div className="wc-title">Device Management</div>
               <div className="wc-text">
-                Connect hardware over Bluetooth, USB Serial, or TCP. Each device
-                auto-registers its sensors, actions, and state schema. Built-in
-                profiles for Unitree Go2, G1, and Arduino. Live state via SSE.
+                Connect your hardware over Bluetooth, USB, or Wi-Fi. Origin
+                automatically detects what your device can do. Built-in support
+                for Unitree Go2, G1, and Arduino — with live status updates.
               </div>
             </div>
             <div className="what-card reveal reveal-delay-3">
               <div className="wc-number">03</div>
               <div className="wc-title">App Platform</div>
               <div className="wc-text">
-                Apps are directories with an origin-app.json manifest. They declare
-                device requirements, frontend runtime, optional backend, and secrets.
-                Install from GitHub, launch against any compatible device.
+                Apps are small packages that control your devices. Each app says
+                which robots it works with and what it needs to run. Install
+                from GitHub and launch on any compatible device.
               </div>
             </div>
             <div className="what-card reveal reveal-delay-4">
               <div className="wc-number">04</div>
               <div className="wc-title">Simulator Support</div>
               <div className="wc-text">
-                Built-in MuJoCo simulator integration. Start simulated quadrupeds
-                and humanoids from the dashboard. Test your apps against physics
-                simulations before deploying to real hardware.
+                No robot yet? No problem. Launch simulated robots right from the
+                dashboard using the MuJoCo physics engine. Test and iterate
+                before you ever touch real hardware.
               </div>
             </div>
           </div>
@@ -327,9 +370,8 @@ export default function LandingPage() {
             <div className="section-label">02 — Devices</div>
             <h2 className="section-title">From microcontrollers to humanoids.</h2>
             <p className="section-desc">
-              Any device that communicates over a transport adapter is an Origin
-              device. Connect real hardware or launch MuJoCo simulations — your
-              apps work with both.
+              Origin works with real hardware and simulated robots. Your apps
+              don't care which — the same code controls both.
             </p>
           </div>
 
@@ -370,7 +412,7 @@ export default function LandingPage() {
                 </svg>
               </div>
               <div className="dc-name">Unitree Go2</div>
-              <div className="dc-type">12-DOF Quadruped</div>
+              <div className="dc-type">Quadruped Robot</div>
               <div className="dc-status live">Live</div>
             </div>
 
@@ -394,7 +436,7 @@ export default function LandingPage() {
                 </svg>
               </div>
               <div className="dc-name">Unitree G1</div>
-              <div className="dc-type">23-DOF Humanoid</div>
+              <div className="dc-type">Humanoid Robot</div>
               <div className="dc-status live">Live</div>
             </div>
 
@@ -428,8 +470,8 @@ export default function LandingPage() {
             <div className="section-label">03 — How</div>
             <h2 className="section-title">Three commands to control a robot.</h2>
             <p className="section-desc">
-              Origin separates device management from application logic. The
-              server manages connections — your apps provide the brains.
+              Origin handles the connection to your hardware. You focus on
+              building the app that controls it.
             </p>
           </div>
 
@@ -438,9 +480,9 @@ export default function LandingPage() {
               <div className="fs-number">01</div>
               <div className="fs-title">Start Origin</div>
               <div className="fs-text">
-                Run <code>npx originrobot up</code> to start the core server and
-                dashboard. Devices connect over Bluetooth, Serial, or TCP. The
-                MuJoCo simulator can be launched from the dashboard.
+                Run <code>npx originrobot up</code> and your dashboard opens in
+                the browser. Connect your devices over Bluetooth, USB, or Wi-Fi
+                — or spin up a simulated robot right from the dashboard.
               </div>
             </div>
             <div className="flow-arrow">
@@ -450,10 +492,9 @@ export default function LandingPage() {
               <div className="fs-number">02</div>
               <div className="fs-title">Install an app</div>
               <div className="fs-text">
-                Run <code>origin install github.com/user/app</code> or install
-                from the dashboard. Apps are directories with an origin-app.json
-                manifest — they declare what devices they support and what they need
-                to run.
+                Run <code>origin install github.com/user/app</code> or browse
+                and install from the dashboard. Each app knows which devices it
+                works with, so Origin only shows you what's compatible.
               </div>
             </div>
             <div className="flow-arrow">
@@ -463,9 +504,9 @@ export default function LandingPage() {
               <div className="fs-number">03</div>
               <div className="fs-title">Launch</div>
               <div className="fs-text">
-                Run <code>origin launch my-app --device go2</code> or click Launch
-                in the dashboard. Origin spawns the app, connects it to the device,
-                and you get a live control interface.
+                Run <code>origin launch my-app --device go2</code> or click
+                Launch in the dashboard. Origin connects everything and opens
+                your control interface — ready to go.
               </div>
             </div>
           </div>
@@ -527,16 +568,15 @@ export default function LandingPage() {
               </div>
             </div>
             <div className="code-desc">
-              <div className="cd-title">This is the whole manifest.</div>
+              <div className="cd-title">This is all you need.</div>
               <div className="cd-text">
-                Your app declares what type of device it needs, what actions and
-                state keys it requires, and how to run its frontend. Origin handles
-                compatibility checking, secret management, process lifecycle, and
-                health monitoring.
+                Your app describes which robot it needs and how to run. Origin
+                takes care of the rest — matching devices, managing credentials,
+                and keeping everything running smoothly.
               </div>
               <div className="cd-text">
-                The same app runs against a real Unitree Go2 over TCP
-                or a MuJoCo simulation — Origin provides the same API for both.
+                The same app works with a real Unitree Go2 or a simulated one.
+                Origin gives your code the same interface either way.
               </div>
               <div className="cd-highlight">
                 Your app doesn&apos;t know or care if the robot is real or
@@ -558,9 +598,9 @@ export default function LandingPage() {
             The <span>Origin</span> App Platform
           </h2>
           <p className="as-desc">
-            Share robot apps with the community. Install from any GitHub repo,
-            configure secrets, and launch against your device. Each app gets a
-            full control interface with live telemetry and logs.
+            Build a robot app and share it with the world. Anyone can install
+            it from GitHub and launch it on their own device — complete with a
+            live control interface, real-time data, and logs.
           </p>
 
           {waitlistStatus === "success" ? (
@@ -639,6 +679,24 @@ export default function LandingPage() {
           <span>origin</span>
         </div>
         <div className="footer-links">
+          <a
+            href="https://store.origin-industries.systems"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="footer-social"
+            aria-label="Store"
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M3 9l1-4h16l1 4" />
+              <path d="M3 9v11a1 1 0 001 1h16a1 1 0 001-1V9" />
+              <path d="M9 21V13h6v8" />
+              <path d="M7 9a2 2 0 01-4 0" />
+              <path d="M11 9a2 2 0 01-4 0" />
+              <path d="M15 9a2 2 0 01-4 0" />
+              <path d="M19 9a2 2 0 01-4 0" />
+              <path d="M23 9a2 2 0 01-4 0" />
+            </svg>
+          </a>
           <a
             href="https://github.com/OriginRobotVerse/launcher"
             target="_blank"

@@ -503,7 +503,7 @@ origin secrets list remote-teleop
             <h1>Origin Marketplace</h1>
             <p className="docs-lead">
               The{" "}
-              <a href="https://origin-appstore.vercel.app/" target="_blank" rel="noopener noreferrer">
+              <a href="https://store.origin-industries.systems" target="_blank" rel="noopener noreferrer">
                 Origin Marketplace
               </a>{" "}
               is a community hub for discovering, installing, and sharing robot control apps.
@@ -515,8 +515,8 @@ origin secrets list remote-teleop
               <div>
                 <strong>Visit the Marketplace</strong>
                 <p>
-                  <a href="https://origin-appstore.vercel.app/" target="_blank" rel="noopener noreferrer">
-                    origin-appstore.vercel.app
+                  <a href="https://store.origin-industries.systems" target="_blank" rel="noopener noreferrer">
+                    https://store.origin-industries.systems
                   </a>
                 </p>
               </div>
@@ -598,7 +598,7 @@ origin install https://github.com/OriginRobotVerse/mujoco-policy-controller
                   <strong>Submit to the marketplace</strong>
                   <p>
                     Visit the{" "}
-                    <a href="https://origin-appstore.vercel.app/" target="_blank" rel="noopener noreferrer">
+                    <a href="https://store.origin-industries.systems" target="_blank" rel="noopener noreferrer">
                       Origin Marketplace
                     </a>{" "}
                     and submit your repository URL. Your app will be reviewed and listed
@@ -612,7 +612,7 @@ origin install https://github.com/OriginRobotVerse/mujoco-policy-controller
             <p>
               Don&apos;t see an app for your use case? The marketplace accepts community requests.
               Visit the{" "}
-              <a href="https://origin-appstore.vercel.app/" target="_blank" rel="noopener noreferrer">
+              <a href="https://store.origin-industries.systems" target="_blank" rel="noopener noreferrer">
                 marketplace
               </a>{" "}
               to submit a request describing:
@@ -755,7 +755,7 @@ es.addEventListener("state.updated", (e) => {
           <div className="docs-footer">
             <div className="docs-footer-links">
               <Link href="/">Home</Link>
-              <a href="https://origin-appstore.vercel.app/" target="_blank" rel="noopener noreferrer">Marketplace</a>
+              <a href="https://store.origin-industries.systems" target="_blank" rel="noopener noreferrer">Marketplace</a>
               <a href="https://github.com/OriginRobotVerse/launcher" target="_blank" rel="noopener noreferrer">GitHub</a>
             </div>
             <div className="docs-footer-tagline">Origin — Control anything.</div>

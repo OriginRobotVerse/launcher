@@ -119,7 +119,7 @@ origin install ./my-local-app
 origin install https://example.com/app-v1.tar.gz
 ```
 
-Browse and request apps from the [Origin Marketplace](https://origin-appstore.vercel.app/).
+Browse and request apps from the [Origin Marketplace](https://store.origin-industries.systems).
 
 ### Manifest
 
