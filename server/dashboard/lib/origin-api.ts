@@ -53,6 +53,8 @@ export const getAppLogs = (id: string, lines = 200) =>
 export const installApp = (req: { source: string; name?: string }) =>
   api<{ ok: boolean; app: { id: string; name: string; version: string } }>("POST", "/api/apps/install", req);
 export const uninstallApp = (id: string) => api("DELETE", `/api/apps/${encodeURIComponent(id)}`);
+export const reinstallApp = (id: string) =>
+  api<{ ok: boolean; app: { id: string; name: string; version: string } }>("POST", `/api/apps/${encodeURIComponent(id)}/reinstall`);
 export const setAppSecrets = (id: string, secrets: Record<string, string>) =>
   api("POST", `/api/apps/${encodeURIComponent(id)}/secrets`, { secrets });
 export const scanApps = () => api("POST", "/api/apps/scan");

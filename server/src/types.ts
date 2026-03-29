@@ -231,6 +231,7 @@ export interface InstalledApp {
   installPath: string;
   installedAt: string;
   secrets: Record<string, string>;
+  source?: string;
 }
 
 export interface RunningApp {
@@ -260,6 +261,7 @@ export interface StoredApp {
   manifest: AppManifest;
   installPath: string;
   installedAt: string;
+  source?: string;
 }
 
 // --- Config file (config.ts in cwd) ---

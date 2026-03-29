@@ -3,7 +3,7 @@
 import { Suspense, useCallback, useState } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { usePoll } from "@/lib/use-poll";
-import { getApp, getDevices, launchApp, uninstallApp } from "@/lib/origin-api";
+import { getApp, getDevices, launchApp, uninstallApp, reinstallApp } from "@/lib/origin-api";
 import { SecretForm } from "@/components/secret-form";
 import { CompatibilityBadge } from "@/components/compatibility-badge";
 
@@ -30,6 +30,8 @@ function AppDetailInner() {
   const [mode, setMode] = useState<"dev" | "prod">("dev");
   const [launching, setLaunching] = useState(false);
   const [showConfirmUninstall, setShowConfirmUninstall] = useState(false);
+  const [showConfirmReinstall, setShowConfirmReinstall] = useState(false);
+  const [reinstalling, setReinstalling] = useState(false);
 
   if (!appId) {
     return <div className="text-dim text-xs mt-12">No app ID specified</div>;
@@ -69,6 +71,19 @@ function AppDetailInner() {
       router.push("/apps");
     } catch (err) {
       console.error("Failed to uninstall:", err);
+    }
+  };
+
+  const handleReinstall = async () => {
+    setReinstalling(true);
+    try {
+      await reinstallApp(appId);
+      setShowConfirmReinstall(false);
+      refresh();
+    } catch (err) {
+      console.error("Failed to reinstall:", err);
+    } finally {
+      setReinstalling(false);
     }
   };
 
@@ -187,7 +202,45 @@ function AppDetailInner() {
       {/* Danger Zone */}
       <section>
         <h2 className="text-xs text-dim uppercase tracking-wider mb-4">Danger Zone</h2>
-        <div className="border border-red-500/20 bg-red-500/5 p-4">
+        <div className="border border-red-500/20 bg-red-500/5 p-4 space-y-4">
+          {/* Reinstall */}
+          {app.source && (
+            <div>
+              {showConfirmReinstall ? (
+                <div className="space-y-3">
+                  <p className="text-[11px] text-amber-400">
+                    Reinstall {app.manifest.name}? This will delete the current copy, re-fetch from source, and re-run setup.
+                  </p>
+                  <p className="text-[10px] text-dim">Source: {app.source}</p>
+                  <div className="flex gap-3">
+                    <button
+                      onClick={handleReinstall}
+                      disabled={reinstalling}
+                      className="border border-amber-500/30 px-4 py-1.5 text-[11px] text-amber-400 hover:bg-amber-500/10 disabled:opacity-40 transition-colors"
+                    >
+                      {reinstalling ? "REINSTALLING..." : "YES, REINSTALL"}
+                    </button>
+                    <button
+                      onClick={() => setShowConfirmReinstall(false)}
+                      disabled={reinstalling}
+                      className="border border-wire px-4 py-1.5 text-[11px] text-dim hover:text-signal transition-colors"
+                    >
+                      CANCEL
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <button
+                  onClick={() => setShowConfirmReinstall(true)}
+                  className="border border-amber-500/30 px-4 py-1.5 text-[11px] text-amber-400 hover:bg-amber-500/10 transition-colors"
+                >
+                  REINSTALL APP
+                </button>
+              )}
+            </div>
+          )}
+
+          {/* Uninstall */}
           {showConfirmUninstall ? (
             <div className="space-y-3">
               <p className="text-[11px] text-red-400">Are you sure you want to uninstall {app.manifest.name}?</p>

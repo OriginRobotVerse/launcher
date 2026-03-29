@@ -304,6 +304,7 @@ export function createOriginServer(opts: ServerOptions) {
             runningDeviceId: running?.deviceId,
             frontendUrl: running?.frontendUrl,
             secretsConfigured: secretStatus.every((s) => !s.required || s.configured),
+            source: app.source,
           };
         }));
         json(res, 200, { apps });
@@ -372,6 +373,7 @@ export function createOriginServer(opts: ServerOptions) {
           json(res, 200, {
             manifest: installed.manifest,
             installPath: installed.installPath,
+            source: installed.source,
             running: running !== null,
             status: running?.status,
             frontendUrl: running?.frontendUrl,
@@ -380,6 +382,20 @@ export function createOriginServer(opts: ServerOptions) {
             compatibility,
             secrets: secretStatus,
           });
+          return;
+        }
+
+        // POST /api/apps/:id/reinstall
+        if (appRest === "/reinstall" && method === "POST") {
+          try {
+            const reinstalled = await appManager.reinstall(appId);
+            json(res, 200, {
+              ok: true,
+              app: { id: reinstalled.manifest.id, name: reinstalled.manifest.name, version: reinstalled.manifest.version },
+            });
+          } catch (err) {
+            json(res, 400, { error: err instanceof Error ? err.message : String(err) });
+          }
           return;
         }
 

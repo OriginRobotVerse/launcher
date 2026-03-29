@@ -53,6 +53,7 @@ export interface AppSummary {
   runningDeviceId?: string;
   frontendUrl?: string;
   secretsConfigured: boolean;
+  source?: string;
 }
 
 export interface AppDetail {
@@ -86,6 +87,7 @@ export interface AppDetail {
     secrets?: Array<{ key: string; description: string; required: boolean }>;
   };
   installPath: string;
+  source?: string;
   running: boolean;
   status?: string;
   frontendUrl?: string;

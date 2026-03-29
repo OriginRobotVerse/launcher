@@ -8,7 +8,7 @@ import { AppCard } from "@/components/app-card";
 
 export default function AppsPage() {
   const fetcher = useCallback(() => getApps(), []);
-  const { data, loading } = usePoll(fetcher, 5000);
+  const { data, loading, refresh } = usePoll(fetcher, 5000);
 
   if (loading) {
     return <div className="text-dim text-xs mt-12">Loading apps...</div>;
@@ -56,7 +56,7 @@ export default function AppsPage() {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
           {apps.map((app) => (
-            <AppCard key={app.id} app={app} />
+            <AppCard key={app.id} app={app} onChanged={refresh} />
           ))}
         </div>
       )}

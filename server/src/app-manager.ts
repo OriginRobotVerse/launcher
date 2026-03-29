@@ -44,6 +44,9 @@ export class AppManager extends EventEmitter {
   // --- Scan ---
 
   async scan(): Promise<void> {
+    // Clear existing entries to prevent stale duplicates on re-scan
+    this.installed.clear();
+
     // Load from storage
     const storedApps = await this.storage.listApps();
     for (const stored of storedApps) {
@@ -54,6 +57,7 @@ export class AppManager extends EventEmitter {
         installPath: stored.installPath,
         installedAt: stored.installedAt,
         secrets,
+        source: stored.source,
       });
     }
 
@@ -180,6 +184,7 @@ export class AppManager extends EventEmitter {
       installPath,
       installedAt: new Date().toISOString(),
       secrets,
+      source,
     };
 
     this.installed.set(manifest.id, app);
@@ -187,6 +192,7 @@ export class AppManager extends EventEmitter {
       manifest,
       installPath,
       installedAt: app.installedAt,
+      source,
     });
 
     this.emit("app:installed", app);
@@ -222,6 +228,31 @@ export class AppManager extends EventEmitter {
     this.installed.delete(appId);
     await this.storage.removeApp(appId);
     this.emit("app:uninstalled", appId);
+  }
+
+  // --- Reinstall ---
+
+  async reinstall(appId: string): Promise<InstalledApp> {
+    const app = this.installed.get(appId);
+    if (!app) throw new Error(`App '${appId}' is not installed`);
+
+    const source = app.source;
+    if (!source) {
+      throw new Error(`No install source recorded for '${appId}' — cannot reinstall`);
+    }
+
+    // Preserve secrets before uninstalling
+    const secrets = await this.storage.getAppSecrets(appId);
+
+    await this.uninstall(appId);
+    const reinstalled = await this.install(source, { name: appId });
+
+    // Restore secrets
+    if (Object.keys(secrets).length > 0) {
+      await this.setSecrets(reinstalled.manifest.id, secrets);
+    }
+
+    return reinstalled;
   }
 
   // --- Launch ---
