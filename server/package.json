@@ -1,6 +1,6 @@
 {
   "name": "originrobot",
-  "version": "0.6.6",
+  "version": "0.6.7",
   "description": "Origin — CLI tool for managing robots, installing apps, and serving a dashboard",
   "type": "module",
   "main": "dist/index.js",

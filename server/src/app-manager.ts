@@ -371,7 +371,6 @@ export class AppManager extends EventEmitter {
         ? (manifest.runtime.devCmd ?? "npm run dev")
         : (manifest.runtime.startCmd ?? "npm start");
 
-      const [frontendCmd, ...frontendArgs] = cmd.split(" ");
       const frontendEnv: Record<string, string | undefined> = {
         ...process.env,
         ...resolveEnv(manifest.runtime.env),
@@ -386,7 +385,7 @@ export class AppManager extends EventEmitter {
         }
       }
 
-      const frontendProcess = spawn(frontendCmd, frontendArgs, {
+      const frontendProcess = spawn(cmd, [], {
         cwd: app.installPath,
         env: frontendEnv,
         stdio: "pipe",
