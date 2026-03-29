@@ -114,6 +114,13 @@ function serveDashboardFile(
     return true;
   }
 
+  // Try path.html (Next.js static export creates e.g. devices/detail.html)
+  const htmlPath = filePath + ".html";
+  if (existsSync(htmlPath) && statSync(htmlPath).isFile()) {
+    serveStaticFile(res, htmlPath);
+    return true;
+  }
+
   // Try path/index.html (for directory-like URLs e.g. /apps → /apps/index.html)
   const indexPath = resolve(filePath, "index.html");
   if (existsSync(indexPath) && statSync(indexPath).isFile()) {
@@ -630,6 +637,12 @@ export function createOriginServer(opts: ServerOptions) {
         }
       }
 
+      // --- Dashboard static files (checked before device routes to prevent
+      //     /devices/detail from matching the /devices/:id API pattern) ---
+      if (opts.dashboardDir && method === "GET") {
+        if (serveDashboardFile(res, opts.dashboardDir, path)) return;
+      }
+
       // --- Device routes ---
       const deviceRoute = matchDeviceRoute(path);
       if (deviceRoute) {
@@ -691,13 +704,8 @@ export function createOriginServer(opts: ServerOptions) {
         return;
       }
 
-      // --- Dashboard static files ---
+      // --- SPA fallback: serve index.html for any unmatched GET request ---
       if (opts.dashboardDir && method === "GET") {
-        // Try to serve the exact file or path/index.html
-        if (serveDashboardFile(res, opts.dashboardDir, path)) return;
-
-        // SPA fallback: serve index.html for any unmatched GET request
-        // (client-side Next.js router handles routing)
         const indexHtml = resolve(opts.dashboardDir, "index.html");
         if (existsSync(indexHtml)) {
           serveStaticFile(res, indexHtml);

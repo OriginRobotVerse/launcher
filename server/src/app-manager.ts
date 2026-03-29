@@ -261,6 +261,10 @@ export class AppManager extends EventEmitter {
     const app = this.installed.get(appId);
     if (!app) throw new Error(`App '${appId}' is not installed`);
 
+    if (!existsSync(app.installPath)) {
+      throw new Error(`App install path does not exist: ${app.installPath}`);
+    }
+
     if (this.running.has(appId)) {
       throw new Error(`App '${appId}' is already running`);
     }
@@ -329,17 +333,18 @@ export class AppManager extends EventEmitter {
     try {
       // Start backend if configured
       if (manifest.backend) {
-        const backendEnv = {
-          ...process.env,
+        const backendEnv: Record<string, string> = {
+          ...Object.fromEntries(
+            Object.entries(process.env).filter((e): e is [string, string] => e[1] != null),
+          ),
           ...resolveEnv(manifest.backend.env),
           ...allSecrets,
         };
 
         const backendArgs = (manifest.backend.args ?? []).map(resolveTemplates);
-        const backendProcess = spawn(
-          manifest.backend.type === "python" ? "python3" : "node",
-          [manifest.backend.entry, ...backendArgs],
-          {
+        const backendCmd = manifest.backend.type === "python" ? "python3" : "node";
+        const backendFullArgs = [manifest.backend.entry, ...backendArgs];
+        const backendProcess = spawn(backendCmd, backendFullArgs, {
             cwd: app.installPath,
             env: backendEnv,
             stdio: "pipe",
@@ -349,6 +354,11 @@ export class AppManager extends EventEmitter {
         runningApp.backendProcess = backendProcess;
         backendProcess.stdout?.on("data", (d) => addLog("backend", d));
         backendProcess.stderr?.on("data", (d) => addLog("backend", d));
+        backendProcess.on("error", (err) => {
+          addLog("backend", `Failed to start: ${err.message}`);
+          runningApp.status = "error";
+          runningApp.error = `Backend failed to start: ${err.message}`;
+        });
         backendProcess.on("exit", (code) => {
           addLog("backend", `Process exited with code ${code}`);
           if (runningApp.status === "running") {
@@ -371,8 +381,10 @@ export class AppManager extends EventEmitter {
         ? (manifest.runtime.devCmd ?? "npm run dev")
         : (manifest.runtime.startCmd ?? "npm start");
 
-      const frontendEnv: Record<string, string | undefined> = {
-        ...process.env,
+      const frontendEnv: Record<string, string> = {
+        ...Object.fromEntries(
+          Object.entries(process.env).filter((e): e is [string, string] => e[1] != null),
+        ),
         ...resolveEnv(manifest.runtime.env),
         ...allSecrets,
         PORT: String(manifest.runtime.port),
@@ -385,7 +397,12 @@ export class AppManager extends EventEmitter {
         }
       }
 
-      const frontendProcess = spawn(cmd, [], {
+      // Ensure PATH is never lost
+      if (!frontendEnv.PATH && process.env.PATH) {
+        frontendEnv.PATH = process.env.PATH;
+      }
+
+      const frontendProcess = spawn(cmd, {
         cwd: app.installPath,
         env: frontendEnv,
         stdio: "pipe",
@@ -395,6 +412,11 @@ export class AppManager extends EventEmitter {
       runningApp.frontendProcess = frontendProcess;
       frontendProcess.stdout?.on("data", (d) => addLog("frontend", d));
       frontendProcess.stderr?.on("data", (d) => addLog("frontend", d));
+      frontendProcess.on("error", (err) => {
+        addLog("frontend", `Failed to start: ${err.message}`);
+        runningApp.status = "error";
+        runningApp.error = `Frontend failed to start: ${err.message}`;
+      });
       frontendProcess.on("exit", (code) => {
         addLog("frontend", `Process exited with code ${code}`);
         if (runningApp.status === "running") {
